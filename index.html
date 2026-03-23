@@ -1,0 +1,2269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <!-- PWA & iPhone meta -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BakeCost Pro">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#3D1A00">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="icons/icon-120.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <!-- Service Worker registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+
+<title>BakeCost Pro — Bakery Pricing Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream: #FFF8F0;
+  --card: #FFFDF8;
+  --brown: #7B3F00;
+  --dark: #3D1A00;
+  --gold: #C8961E;
+  --orange: #E85D04;
+  --border: #E8D5B7;
+  --muted: #9E7B5A;
+  --green: #2E7D32;
+  --red: #C62828;
+  --shadow: 0 2px 10px rgba(61,26,0,0.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  font-family: 'Lato', sans-serif;
+  background: var(--cream);
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c8961e' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  color: var(--dark);
+  min-height: 100vh;
+}
+/* NAV */
+.nav {
+  background: var(--dark);
+  padding-top: max(0px, env(safe-area-inset-top));
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 3px 16px rgba(61,26,0,0.35);
+}
+.nav-brand {
+  font-family: 'Playfair Display', serif;
+  color: var(--gold);
+  font-size: 1.35rem;
+  font-weight: 700;
+  padding: 16px 24px 16px 0;
+  border-right: 1px solid rgba(255,255,255,0.12);
+  margin-right: 8px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.nav-tab {
+  color: rgba(255,255,255,0.55);
+  padding: 20px 18px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  border-bottom: 3px solid transparent;
+  white-space: nowrap;
+}
+.nav-tab:hover { color: rgba(255,255,255,0.9); }
+.nav-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+/* LAYOUT */
+.container { max-width: 1060px; margin: 0 auto; padding: 28px 20px; }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; animation: fadeIn 0.25s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+/* CARDS */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 22px;
+  box-shadow: var(--shadow);
+}
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.2rem;
+  color: var(--brown);
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--border), transparent);
+}
+/* BUTTONS */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-family: 'Lato', sans-serif;
+  font-weight: 700;
+  font-size: 0.88rem;
+  letter-spacing: 0.3px;
+  transition: all 0.18s;
+  text-decoration: none;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--brown); color: #fff; }
+.btn-primary:hover { background: #5c2f00; box-shadow: 0 4px 14px rgba(123,63,0,0.35); }
+.btn-gold { background: var(--gold); color: #fff; }
+.btn-gold:hover { background: #a87818; box-shadow: 0 4px 14px rgba(200,150,30,0.35); }
+.btn-orange { background: var(--orange); color: #fff; }
+.btn-orange:hover { background: #c44d02; }
+.btn-outline { background: transparent; border: 2px solid var(--border); color: var(--brown); }
+.btn-outline:hover { border-color: var(--brown); background: rgba(123,63,0,0.05); }
+.btn-danger { background: var(--red); color: #fff; }
+.btn-danger:hover { background: #9a1515; }
+.btn-sm { padding: 6px 13px; font-size: 0.8rem; }
+.btn-lg { padding: 14px 32px; font-size: 1rem; }
+.btn-icon {
+  background: none; border: none; cursor: pointer;
+  padding: 5px 8px; border-radius: 6px;
+  color: var(--red); font-size: 1rem;
+  transition: background 0.15s;
+}
+.btn-icon:hover { background: rgba(198,40,40,0.1); }
+/* FORMS */
+.form-row { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-label {
+  font-size: 0.75rem; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.6px;
+}
+input[type="text"], input[type="number"], select, textarea {
+  padding: 9px 13px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-family: 'Lato', sans-serif;
+  font-size: 0.88rem;
+  background: #fff;
+  color: var(--dark);
+  transition: border-color 0.18s, box-shadow 0.18s;
+  width: 100%;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(200,150,30,0.12);
+}
+/* VARIETY CHIPS */
+.variety-grid { display: flex; gap: 9px; flex-wrap: wrap; margin-bottom: 18px; }
+.variety-chip {
+  padding: 7px 17px;
+  border-radius: 24px;
+  border: 2px solid var(--border);
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--muted);
+  font-family: 'Lato', sans-serif;
+  transition: all 0.18s;
+}
+.variety-chip:hover { border-color: var(--gold); color: var(--brown); transform: translateY(-1px); }
+.variety-chip.selected { border-color: var(--brown); background: var(--brown); color: #fff; }
+/* TABLE */
+.table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+thead th {
+  background: var(--dark);
+  color: rgba(255,255,255,0.8);
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 11px 13px;
+  text-align: left;
+  white-space: nowrap;
+}
+tbody tr { border-bottom: 1px solid var(--border); transition: background 0.12s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: rgba(200,150,30,0.04); }
+td { padding: 8px 12px; vertical-align: middle; }
+tfoot td {
+  padding: 10px 12px;
+  font-weight: 700;
+  color: var(--brown);
+  background: rgba(200,150,30,0.05);
+  border-top: 2px solid var(--border);
+}
+td input, td select {
+  padding: 7px 10px;
+  font-size: 0.84rem;
+  margin: 0;
+}
+/* SUMMARY STRIP */
+.summary-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.summary-item {
+  background: rgba(200,150,30,0.06);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+}
+.summary-label { font-size: 0.73rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.summary-value { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700; color: var(--brown); }
+/* RESULTS */
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.result-item {
+  background: rgba(200,150,30,0.07);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+}
+.result-item.star {
+  background: var(--brown);
+  border-color: var(--brown);
+  grid-column: span 2;
+}
+.result-label { font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.result-item.star .result-label { color: rgba(255,255,255,0.65); }
+.result-value { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 700; color: var(--brown); }
+.result-item.star .result-value { color: var(--gold); font-size: 2rem; }
+/* AI BOX */
+.ai-box {
+  background: linear-gradient(135deg, rgba(61,26,0,0.025), rgba(200,150,30,0.06));
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--gold);
+  border-radius: 8px;
+  padding: 16px 18px;
+  font-size: 0.88rem;
+  line-height: 1.75;
+  color: var(--dark);
+  white-space: pre-wrap;
+}
+.spinner {
+  width: 18px; height: 18px;
+  border: 2px solid var(--border);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+/* INFO BOX */
+.info-box {
+  background: rgba(200,150,30,0.08);
+  border: 1px solid rgba(200,150,30,0.3);
+  border-radius: 8px;
+  padding: 11px 15px;
+  font-size: 0.84rem;
+  color: #6B4700;
+  margin-bottom: 16px;
+}
+/* BADGE */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+.badge-gold { background: rgba(200,150,30,0.15); color: #7A5800; }
+.badge-green { background: rgba(46,125,50,0.15); color: var(--green); }
+.badge-red { background: rgba(198,40,40,0.12); color: var(--red); }
+/* MODAL */
+.modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(30,10,0,0.55);
+  backdrop-filter: blur(5px);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 640px;
+  width: 100%;
+  max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 60px rgba(30,10,0,0.35);
+  animation: modalIn 0.22s ease;
+}
+@keyframes modalIn { from { transform: translateY(18px) scale(0.97); opacity:0; } to { transform: none; opacity:1; } }
+.modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; }
+.modal-title { font-family: 'Playfair Display', serif; font-size: 1.25rem; color: var(--brown); }
+.modal-close {
+  background: none; border: none; font-size: 1.4rem;
+  cursor: pointer; color: var(--muted); padding: 0 4px;
+  line-height: 1; transition: color 0.15s;
+}
+.modal-close:hover { color: var(--dark); }
+/* MODAL COST TABLE */
+.cost-table { width: 100%; font-size: 0.84rem; margin-bottom: 14px; }
+.cost-table th { background: var(--dark); color: rgba(255,255,255,0.8); padding: 8px 10px; text-align: left; font-size: 0.73rem; text-transform: uppercase; letter-spacing: 0.4px; }
+.cost-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); }
+.cost-table tr:last-child td { border-bottom: none; }
+/* RECORDS TABLE */
+.rec-row { cursor: pointer; }
+.rec-row:hover td { background: rgba(200,150,30,0.06) !important; }
+/* TOAST */
+.toast {
+  position: fixed; bottom: 28px; right: 28px;
+  background: var(--dark); color: #fff;
+  padding: 12px 20px; border-radius: 10px;
+  font-size: 0.88rem; font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  z-index: 600; opacity: 0; pointer-events: none;
+  transform: translateY(8px);
+  transition: all 0.25s ease;
+}
+.toast.show { opacity: 1; pointer-events: auto; transform: none; }
+/* CODE BLOCK */
+pre.code-block {
+  background: #1a0800; color: #FFD580;
+  padding: 16px; border-radius: 8px;
+  font-size: 0.75rem; overflow-x: auto;
+  line-height: 1.7; white-space: pre; font-family: monospace;
+}
+/* EMPTY STATE */
+.empty-state {
+  text-align: center; padding: 40px 20px;
+  color: var(--muted); font-style: italic; font-size: 0.9rem;
+}
+/* PROFIT ROW */
+.profit-row {
+  display: flex; gap: 14px; align-items: center;
+  padding: 16px; background: rgba(200,150,30,0.06);
+  border-radius: 10px; border: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+/* INGDB SORTABLE HEADERS */
+#ingdb-table thead th:hover { background: #2a0f00; cursor: pointer; }
+#ingdb-table thead th { user-select: none; }
+.ingdb-custom-row { background: rgba(200,150,30,0.04); }
+
+/* WEIGHT GRID */
+.weight-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.weight-yield-panel {
+  background: rgba(200,150,30,0.035);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+}
+.weight-stat-row { display: flex; gap: 10px; }
+.weight-stat {
+  flex: 1;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.weight-stat-label {
+  font-size: 0.72rem; font-weight: 700;
+  color: var(--muted); text-transform: uppercase;
+  letter-spacing: 0.4px; margin-bottom: 4px;
+}
+.weight-stat-value {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.05rem; font-weight: 700; color: var(--dark);
+}
+.wt-compare-row {
+  display: flex; justify-content: space-between;
+  align-items: center; padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+.wt-compare-row:last-child { border-bottom: none; }
+.wt-bar-wrap {
+  width: 100%; height: 10px;
+  background: var(--border); border-radius: 5px;
+  overflow: hidden; margin: 10px 0 4px;
+}
+.wt-bar-fill {
+  height: 100%; border-radius: 5px;
+  transition: width 0.5s ease;
+  background: linear-gradient(90deg, var(--gold), var(--orange));
+}
+@media (max-width: 720px) {
+  .weight-grid { grid-template-columns: 1fr; }
+}
+
+/* RESPONSIVE */
+@media (max-width: 720px) {
+  .summary-strip { grid-template-columns: 1fr 1fr; }
+  .result-grid { grid-template-columns: 1fr; }
+  .result-item.star { grid-column: span 1; }
+  .nav-brand { font-size: 1.05rem; padding-right: 12px; }
+  .nav-tab { padding: 16px 10px; font-size: 0.78rem; }
+}
+@media (max-width: 480px) {
+  .summary-strip { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-brand">🧁 BakeCost Pro</div>
+  <div class="nav-tab active" onclick="showTab('calculator',this)">🧮 Calculator</div>
+  <div class="nav-tab" onclick="showTab('records',this)">📋 Records</div>
+  <div class="nav-tab" onclick="showTab('settings',this)">⚙️ Settings</div>
+</nav>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Record Details</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- MAIN CONTAINER -->
+<div class="container">
+
+  <!-- ========== CALCULATOR TAB ========== -->
+  <div class="tab-pane active" id="tab-calculator">
+
+    <!-- STEP 1: VARIETY -->
+    <div class="card">
+      <div class="section-title">① Select Pastry Variety</div>
+      <div class="variety-grid" id="variety-grid"></div>
+      <div class="form-row">
+        <div class="form-group" style="flex:1; min-width:200px;">
+          <label class="form-label">Add Custom Variety</label>
+          <input type="text" id="new-variety-input" placeholder="e.g. Red Velvet Cake, Éclairs…"
+            onkeydown="if(event.key==='Enter')addVariety()">
+        </div>
+        <button class="btn btn-outline" onclick="addVariety()">+ Add Variety</button>
+        <div class="form-group" style="min-width:140px;">
+          <label class="form-label">Batch Makes (pcs)</label>
+          <input type="number" id="batch-size" value="1" min="1" oninput="recalcSummary()">
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: INGREDIENTS -->
+    <div class="card" id="ing-card">
+      <div class="section-title">② Ingredients</div>
+      <div class="info-box">💡 Costs are pre-filled with typical Indian market prices per unit. Edit as per your actual purchase costs.</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="min-width:190px;">Ingredient</th>
+              <th style="min-width:90px;">Quantity</th>
+              <th style="min-width:75px;">Unit</th>
+              <th style="min-width:115px;">Cost / Unit (₹)</th>
+              <th style="min-width:105px;">Row Total (₹)</th>
+              <th style="width:44px;"></th>
+            </tr>
+          </thead>
+          <tbody id="ing-tbody"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4" style="text-align:right; padding-right:16px;">Total Ingredient Cost:</td>
+              <td>₹ <span id="ing-total">0.00</span></td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div style="margin-top:14px;">
+        <button class="btn btn-outline btn-sm" onclick="addIngredient()">+ Add Ingredient</button>
+      </div>
+    </div>
+
+    <!-- STEP 2b: WEIGHT ESTIMATION -->
+    <div class="card" id="weight-card">
+      <div class="section-title">&#9316;&#65039; Cake Weight Estimation</div>
+      <div class="info-box">&#128207; Theoretical weight is calculated from your ingredient quantities. Enter the actual baked weight to compare and track your baking yield.</div>
+
+      <div class="weight-grid">
+        <!-- Left: weight breakdown -->
+        <div>
+          <div style="font-size:0.78rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">Ingredient Weight Breakdown</div>
+          <div class="table-wrap" style="margin-bottom:14px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ingredient</th>
+                  <th style="text-align:right;">Weight (g)</th>
+                  <th style="text-align:right;">Note</th>
+                </tr>
+              </thead>
+              <tbody id="weight-breakdown-tbody"></tbody>
+              <tfoot>
+                <tr>
+                  <td style="text-align:right; padding-right:10px; font-weight:700; color:var(--brown);">Total Raw Weight:</td>
+                  <td style="text-align:right; font-weight:700; color:var(--brown);"><span id="raw-weight-total">0</span> g</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right: yield panel -->
+        <div class="weight-yield-panel">
+          <div style="font-size:0.78rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px;">Baking Yield &amp; Actual Weight</div>
+
+          <div class="weight-stat-row">
+            <div class="weight-stat">
+              <div class="weight-stat-label">Total Raw Weight</div>
+              <div class="weight-stat-value" id="ws-raw">0 g</div>
+            </div>
+            <div class="weight-stat">
+              <div class="weight-stat-label">Baking Loss</div>
+              <div class="weight-stat-value" style="color:var(--red);" id="ws-loss">0 g</div>
+            </div>
+          </div>
+
+          <div class="weight-stat-row" style="margin-top:8px;">
+            <div class="weight-stat" style="background:rgba(123,63,0,0.07); border-color:var(--brown);">
+              <div class="weight-stat-label">&#127381; Theoretical Baked Weight</div>
+              <div class="weight-stat-value" style="color:var(--brown); font-size:1.3rem;" id="ws-theory">0 g</div>
+            </div>
+            <div class="weight-stat">
+              <div class="weight-stat-label">Per Piece (theoretical)</div>
+              <div class="weight-stat-value" id="ws-theory-pc">0 g</div>
+            </div>
+          </div>
+
+          <div style="margin:14px 0; display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+            <div class="form-group">
+              <label class="form-label">Baking Loss % <span style="font-weight:400; text-transform:none; font-size:0.76rem;">(moisture evaporation)</span></label>
+              <input type="number" id="baking-loss-pct" value="15" min="0" max="50" step="0.5"
+                style="width:100px;" oninput="recalcWeight()">
+            </div>
+            <div style="font-size:0.8rem; color:var(--muted); line-height:1.6; flex:1; min-width:160px;">
+              Typical: Cakes 12&#8211;18%, Bread 20&#8211;25%,<br>Cookies 10&#8211;15%, Croissants 18&#8211;22%
+            </div>
+          </div>
+
+          <div style="background:rgba(200,150,30,0.08); border:1.5px dashed var(--gold); border-radius:10px; padding:14px; margin-bottom:14px;">
+            <div style="font-size:0.78rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">&#9989; Actual Weight After Baking</div>
+            <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+              <div class="form-group">
+                <label class="form-label">Actual Total Weight (g)</label>
+                <input type="number" id="actual-weight" placeholder="e.g. 820" min="0" step="1"
+                  style="width:140px;" oninput="recalcWeight()">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Actual Per Piece (g)</label>
+                <input type="number" id="actual-weight-pc" placeholder="auto" min="0" step="0.1"
+                  style="width:120px;" oninput="recalcWeightFromPiece()">
+              </div>
+            </div>
+          </div>
+
+          <div id="weight-comparison-box" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: OVERHEADS -->
+    <div class="card">
+      <div class="section-title">③ Overheads & Operating Costs</div>
+      <div class="info-box">💡 Auto-suggested based on your ingredient total. Adjust to match your actual overhead expenses.</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="min-width:200px;">Overhead Item</th>
+              <th style="min-width:120px;">Amount (₹)</th>
+              <th style="min-width:180px;">Notes / Basis</th>
+              <th style="width:44px;"></th>
+            </tr>
+          </thead>
+          <tbody id="overhead-tbody"></tbody>
+          <tfoot>
+            <tr>
+              <td style="text-align:right; padding-right:16px;">Total Overheads:</td>
+              <td>₹ <span id="overhead-total">0.00</span></td>
+              <td colspan="2"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="addOverhead()">+ Add Overhead</button>
+        <button class="btn btn-outline btn-sm" onclick="suggestOverheads()">🔄 Re-suggest Overheads</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: PROFIT & CALCULATE -->
+    <div class="card">
+      <div class="section-title">④ Profit Margin &amp; Final Price</div>
+
+      <div class="summary-strip">
+        <div class="summary-item">
+          <div class="summary-label">Ingredient Cost</div>
+          <div class="summary-value">₹ <span id="sum-ing">0.00</span></div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Total Overheads</div>
+          <div class="summary-value">₹ <span id="sum-over">0.00</span></div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Subtotal</div>
+          <div class="summary-value">₹ <span id="sum-sub">0.00</span></div>
+        </div>
+        <div class="summary-item" style="background:rgba(232,93,4,0.07); border-color:rgba(232,93,4,0.25);">
+          <div class="summary-label">Profit Amount</div>
+          <div class="summary-value" style="color:var(--orange);">₹ <span id="sum-profit">0.00</span></div>
+        </div>
+      </div>
+
+      <div class="profit-row">
+        <div class="form-group">
+          <label class="form-label">Profit Margin %</label>
+          <input type="number" id="profit-pct" value="30" min="0" max="200"
+            style="width:110px;" oninput="recalcSummary()">
+        </div>
+        <div style="flex:1; color:var(--muted); font-size:0.85rem; line-height:1.5;">
+          Recommended selling price = Subtotal + Profit.<br>
+          Set your desired profit margin and click Calculate.
+        </div>
+      </div>
+
+      <div style="margin-top:20px; display:flex; gap:12px; flex-wrap:wrap;">
+        <button class="btn btn-primary btn-lg" onclick="calculate()">🧮 Calculate Selling Price</button>
+        <button class="btn btn-gold btn-lg" onclick="comparePrice()">🌐 Compare Market Prices</button>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="card" id="results-card" style="display:none;">
+      <div class="section-title">📊 Results</div>
+
+      <div class="result-grid">
+        <div class="result-item">
+          <div class="result-label">Total Production Cost (Batch)</div>
+          <div class="result-value">₹ <span id="res-total-batch">0</span></div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Production Cost Per Piece</div>
+          <div class="result-value">₹ <span id="res-cost-piece">0</span></div>
+        </div>
+        <div class="result-item star">
+          <div class="result-label">⭐ Recommended Selling Price Per Piece</div>
+          <div class="result-value">₹ <span id="res-sell-piece">0</span></div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Total Selling Price (Full Batch)</div>
+          <div class="result-value">₹ <span id="res-sell-batch">0</span></div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Profit Per Piece</div>
+          <div class="result-value" style="color:var(--orange);">₹ <span id="res-profit-piece">0</span></div>
+        </div>
+      </div>
+
+      <!-- WEIGHT RESULTS -->
+      <div id="weight-results-section" style="margin-bottom:20px;">
+        <div style="font-family:'Playfair Display',serif; color:var(--brown); font-size:1.05rem; margin-bottom:12px;">⚖️ Weight Summary</div>
+        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:12px;" id="weight-results-grid">
+          <div class="summary-item">
+            <div class="summary-label">Raw Ingredient Weight</div>
+            <div class="summary-value"><span id="rr-raw">—</span></div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Theoretical Baked Weight</div>
+            <div class="summary-value" style="color:var(--brown);"><span id="rr-theory">—</span></div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Theoretical Per Piece</div>
+            <div class="summary-value"><span id="rr-theory-pc">—</span></div>
+          </div>
+          <div class="summary-item" id="rr-actual-box" style="display:none; background:rgba(46,125,50,0.07); border-color:rgba(46,125,50,0.3);">
+            <div class="summary-label">Actual Weight</div>
+            <div class="summary-value" style="color:var(--green);"><span id="rr-actual">—</span></div>
+          </div>
+        </div>
+        <div id="rr-compare-panel" style="display:none; background:rgba(200,150,30,0.06); border:1px solid var(--border); border-radius:10px; padding:16px;">
+          <div style="font-size:0.78rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:10px;">Actual vs Theoretical Comparison</div>
+          <div class="wt-compare-row">
+            <span style="color:var(--muted);">Theoretical Baked</span>
+            <span style="font-weight:700;" id="rr-cp-theory">—</span>
+          </div>
+          <div class="wt-compare-row">
+            <span style="color:var(--muted);">Actual Baked</span>
+            <span style="font-weight:700;" id="rr-cp-actual">—</span>
+          </div>
+          <div class="wt-compare-row">
+            <span style="color:var(--muted);">Difference</span>
+            <span style="font-weight:700;" id="rr-cp-diff">—</span>
+          </div>
+          <div class="wt-compare-row">
+            <span style="color:var(--muted);">Actual Yield %</span>
+            <span style="font-weight:700;" id="rr-cp-yield">—</span>
+          </div>
+          <div style="margin-top:12px;">
+            <div style="display:flex; justify-content:space-between; font-size:0.78rem; color:var(--muted); margin-bottom:3px;">
+              <span>Yield efficiency</span><span id="rr-bar-label">0%</span>
+            </div>
+            <div class="wt-bar-wrap">
+              <div class="wt-bar-fill" id="rr-bar" style="width:0%"></div>
+            </div>
+          </div>
+          <div id="rr-verdict" style="margin-top:10px; font-size:0.84rem; font-weight:600; padding:9px 13px; border-radius:7px;"></div>
+        </div>
+      </div>
+
+      <!-- AI Comparison -->
+      <div id="compare-section" style="display:none; margin-bottom:20px;">
+        <div style="font-family:'Playfair Display',serif; color:var(--brown); font-size:1.05rem; margin-bottom:10px;">🌐 Market Price Comparison</div>
+        <div id="compare-box" class="ai-box"></div>
+      </div>
+
+      <button class="btn btn-orange btn-lg" onclick="saveRecord()">💾 Save to Records &amp; Google Sheets</button>
+    </div>
+
+  </div><!-- /tab-calculator -->
+
+  <!-- ========== RECORDS TAB ========== -->
+  <div class="tab-pane" id="tab-records">
+    <div class="card">
+      <div class="section-title">📋 Saved Records
+        <button class="btn btn-outline btn-sm" style="margin-left:auto; margin-right:0;" onclick="clearAllRecords()">🗑 Clear All</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Date &amp; Time</th>
+              <th>Variety</th>
+              <th>Batch</th>
+              <th>Ing. Cost</th>
+              <th>Overheads</th>
+              <th>Subtotal</th>
+              <th>Selling Price</th>
+              <th>Per Piece</th>
+              <th style="text-align:center;" title="Sync">☁</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="records-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== SETTINGS TAB ========== -->
+  <div class="tab-pane" id="tab-settings">
+
+    <!-- API KEY CARD -->
+    <div class="card">
+      <div class="section-title">🔑 Anthropic API Key &nbsp;<span class="badge badge-gold">Required for Market Compare</span></div>
+      <div class="info-box" style="margin-bottom:14px;">
+        The <b>🌐 Compare Market Prices</b> feature uses the Anthropic API and requires your own key.<br>
+        Get one free at <a href="https://console.anthropic.com" target="_blank" style="color:var(--brown);font-weight:700;">console.anthropic.com</a> &rarr; <b>API Keys</b> &rarr; <b>Create Key</b>.
+      </div>
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">API Key</label>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <input type="password" id="api-key-input" placeholder="sk-ant-api03-…" style="flex:1; min-width:200px; font-family:monospace; font-size:0.82rem;">
+          <button class="btn btn-outline btn-sm" onclick="toggleApiKeyVisibility()" id="toggle-key-btn">👁 Show</button>
+        </div>
+      </div>
+      <div id="api-key-status" style="font-size:0.82rem; color:var(--green); margin-bottom:10px; display:none;">✅ API key saved</div>
+      <button class="btn btn-primary" onclick="saveSettings()">💾 Save Settings</button>
+    </div>
+
+    <div class="card">
+      <div class="section-title">☁️ Google Sheets — Live Sync</div>
+
+      <div style="display:flex;align-items:flex-start;gap:12px;background:rgba(46,125,50,0.07);border:1.5px solid rgba(46,125,50,0.3);border-radius:10px;padding:14px 16px;margin-bottom:18px;">
+        <span style="font-size:1.5rem;line-height:1;">🔗</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:0.72rem;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">✔ Connected — Hardwired Endpoint</div>
+          <div style="font-size:0.72rem;color:var(--dark);word-break:break-all;font-family:monospace;opacity:0.75;">https://script.google.com/macros/s/AKfycbxWfj-4xVDFASpzJkYGg2fiJluIqGpc0EVIsTq4Yk2UgI0rzsGh0Q7RTFlSZz2b3T_U/exec</div>
+        </div>
+        <span style="color:var(--green);font-size:1.4rem;flex-shrink:0;">✅</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;">
+        <div class="summary-item"><div class="summary-label">Last Sync</div><div style="font-size:0.9rem;font-weight:700;color:var(--brown);" id="sync-last-time">Never</div></div>
+        <div class="summary-item"><div class="summary-label">Records Synced</div><div style="font-size:0.9rem;font-weight:700;color:var(--green);" id="sync-count">0</div></div>
+        <div class="summary-item"><div class="summary-label">Pending Sync</div><div style="font-size:0.9rem;font-weight:700;color:var(--orange);" id="sync-pending">0</div></div>
+      </div>
+
+      <div style="background:rgba(200,150,30,0.06);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">
+        <div style="font-size:0.78rem;font-weight:700;color:var(--brown);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">⚡ Auto-Sync Settings</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.88rem;font-weight:600;">
+            <input type="checkbox" id="autosync-toggle" checked onchange="toggleAutoSync()" style="width:16px;height:16px;accent-color:var(--brown);">
+            Enable auto-sync every
+          </label>
+          <select id="autosync-interval" style="width:130px;" onchange="restartAutoSync()">
+            <option value="30000">30 seconds</option>
+            <option value="60000" selected>1 minute</option>
+            <option value="300000">5 minutes</option>
+            <option value="600000">10 minutes</option>
+          </select>
+        </div>
+        <p style="margin:10px 0 0;font-size:0.8rem;color:var(--muted);line-height:1.6;">Automatically pushes un-synced records to Google Sheets. New records are synced immediately on save.</p>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+        <button class="btn btn-primary" onclick="syncAllRecords()">🔄 Sync All Now</button>
+        <button class="btn btn-outline btn-sm" onclick="resetSyncFlags()">↺ Reset Sync Flags</button>
+      </div>
+
+      <div id="sync-log" style="font-size:0.77rem;color:var(--muted);max-height:90px;overflow-y:auto;font-family:monospace;background:rgba(0,0,0,0.03);border-radius:6px;padding:8px;display:none;line-height:1.9;"></div>
+
+      <details style="margin-top:18px;">
+        <summary style="cursor:pointer;font-size:0.85rem;font-weight:700;color:var(--brown);padding:8px 0;user-select:none;">📖 Apps Script Reference</summary>
+        <p style="margin:10px 0 8px;font-size:0.82rem;color:var(--muted);">Already deployed above. Shown for reference only.</p>
+        <pre class="code-block" id="apps-script-display" style="font-size:0.7rem;"></pre>
+      </details>
+    </div>
+
+    <div class="card">
+      <div class="section-title">⚙️ Default Settings</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Default Profit Margin (%)</label>
+          <input type="number" id="default-profit" value="30" min="0" max="200" style="width:120px;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Currency Symbol</label>
+          <input type="text" id="currency-sym" value="₹" style="width:70px;">
+        </div>
+      </div>
+      <button class="btn btn-primary" style="margin-top:16px;" onclick="saveDefaultSettings()">Save Defaults</button>
+    </div>
+
+    <div class="card">
+      <div class="section-title">🧂 Ingredient Price Database
+        <span id="ingdb-count" class="badge badge-gold" style="font-family:'Lato',sans-serif; font-size:0.72rem;"></span>
+      </div>
+      <div class="info-box">
+        Add, edit or delete ingredients. Cost changes apply to all new calculations. Custom ingredients are saved permanently.
+      </div>
+
+      <!-- Search + action bar -->
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; align-items:center;">
+        <div style="position:relative; flex:1; min-width:180px;">
+          <span style="position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:1rem; pointer-events:none;">🔍</span>
+          <input type="text" id="ingdb-search" placeholder="Search ingredients…"
+            style="padding-left:34px; width:100%;" oninput="renderIngDBTable()">
+        </div>
+        <select id="ingdb-filter-unit" style="width:115px;" onchange="renderIngDBTable()">
+          <option value="">All Units</option>
+          <option value="g">g</option>
+          <option value="kg">kg</option>
+          <option value="ml">ml</option>
+          <option value="L">L</option>
+          <option value="piece">piece</option>
+          <option value="tsp">tsp</option>
+          <option value="tbsp">tbsp</option>
+          <option value="cup">cup</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="exportIngDBCSV()" title="Export as CSV">⬇️ Export CSV</button>
+        <label class="btn btn-outline btn-sm" style="cursor:pointer;" title="Import from CSV">
+          ⬆️ Import CSV
+          <input type="file" accept=".csv" style="display:none;" onchange="importIngDBCSV(this)">
+        </label>
+      </div>
+
+      <!-- ADD NEW INGREDIENT FORM -->
+      <div style="background:rgba(200,150,30,0.06); border:1.5px dashed var(--gold); border-radius:12px; padding:16px; margin-bottom:16px;">
+        <div style="font-size:0.78rem; font-weight:700; color:var(--brown); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px;">
+          ➕ Add New Ingredient
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+          <div class="form-group" style="flex:2; min-width:160px;">
+            <label class="form-label">Ingredient Name</label>
+            <input type="text" id="new-ing-name" placeholder="e.g. Coconut Milk" style="width:100%;"
+              onkeydown="if(event.key==='Enter')addIngDBEntry()">
+          </div>
+          <div class="form-group" style="min-width:100px;">
+            <label class="form-label">Unit</label>
+            <select id="new-ing-unit" style="width:100%;">
+              <option value="g">g</option>
+              <option value="kg">kg</option>
+              <option value="ml">ml</option>
+              <option value="L">L</option>
+              <option value="piece">piece</option>
+              <option value="tsp">tsp</option>
+              <option value="tbsp">tbsp</option>
+              <option value="cup">cup</option>
+            </select>
+          </div>
+          <div class="form-group" style="min-width:130px;">
+            <label class="form-label">Cost / Unit (₹)</label>
+            <input type="number" id="new-ing-cost" placeholder="0.00" min="0" step="0.001" style="width:100%;"
+              onkeydown="if(event.key==='Enter')addIngDBEntry()">
+          </div>
+          <div class="form-group" style="min-width:120px;">
+            <label class="form-label">Category <span style="font-weight:400;text-transform:none;">(optional)</span></label>
+            <input type="text" id="new-ing-cat" placeholder="e.g. Dairy" style="width:100%;" list="cat-datalist"
+              onkeydown="if(event.key==='Enter')addIngDBEntry()">
+            <datalist id="cat-datalist">
+              <option value="Flour &amp; Starch">
+              <option value="Dairy">
+              <option value="Sweeteners">
+              <option value="Fats &amp; Oils">
+              <option value="Eggs">
+              <option value="Leavening">
+              <option value="Flavouring">
+              <option value="Chocolate">
+              <option value="Fruits">
+              <option value="Nuts &amp; Dry Fruits">
+              <option value="Spices">
+              <option value="Other">
+            </datalist>
+          </div>
+          <button class="btn btn-primary" style="min-width:110px; margin-bottom:1px;" onclick="addIngDBEntry()">
+            ➕ Add
+          </button>
+        </div>
+        <div id="ingdb-add-error" style="color:var(--red); font-size:0.82rem; margin-top:8px; display:none;"></div>
+      </div>
+
+      <!-- TABLE -->
+      <div class="table-wrap">
+        <table id="ingdb-table">
+          <thead>
+            <tr>
+              <th style="min-width:60px; cursor:pointer;" onclick="sortIngDB('cat')" title="Sort by category">
+                Cat <span id="sort-cat">↕</span>
+              </th>
+              <th style="min-width:190px; cursor:pointer;" onclick="sortIngDB('name')" title="Sort by name">
+                Ingredient <span id="sort-name">↑</span>
+              </th>
+              <th style="min-width:80px; cursor:pointer;" onclick="sortIngDB('unit')" title="Sort by unit">
+                Unit <span id="sort-unit">↕</span>
+              </th>
+              <th style="min-width:130px; cursor:pointer;" onclick="sortIngDB('cost')" title="Sort by cost">
+                Cost / Unit (₹) <span id="sort-cost">↕</span>
+              </th>
+              <th style="min-width:80px;">Source</th>
+              <th style="width:44px;"></th>
+            </tr>
+          </thead>
+          <tbody id="ingdb-tbody"></tbody>
+        </table>
+      </div>
+
+      <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <button class="btn btn-primary" onclick="saveIngDB()">💾 Save All Changes</button>
+        <button class="btn btn-outline btn-sm" onclick="resetIngDB()" style="color:var(--red); border-color:var(--red);">🔄 Reset to Defaults</button>
+        <span style="font-size:0.8rem; color:var(--muted); margin-left:4px;" id="ingdb-saved-status"></span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- Datalist for ingredient autocomplete -->
+<datalist id="ing-datalist"></datalist>
+
+<script>
+// ============================================================
+//  DATA STORE
+// ============================================================
+let ING_DB = {
+  'All Purpose Flour':    { unit:'g',     cost:0.04,  cat:'Flour & Starch' },
+  'Corn Starch':          { unit:'g',     cost:0.10,  cat:'Flour & Starch' },
+  'Almond Flour':         { unit:'g',     cost:1.20,  cat:'Flour & Starch' },
+  'Almonds (powdered)':   { unit:'g',     cost:0.90,  cat:'Flour & Starch' },
+  'Sugar':                { unit:'g',     cost:0.045, cat:'Sweeteners' },
+  "Confectioner's Sugar": { unit:'g',     cost:0.06,  cat:'Sweeteners' },
+  'Condensed Milk':       { unit:'ml',    cost:0.12,  cat:'Sweeteners' },
+  'Butter':               { unit:'g',     cost:0.50,  cat:'Fats & Oils' },
+  'Vegetable Oil':        { unit:'ml',    cost:0.15,  cat:'Fats & Oils' },
+  'Eggs':                 { unit:'piece', cost:7.00,  cat:'Eggs' },
+  'Milk':                 { unit:'ml',    cost:0.06,  cat:'Dairy' },
+  'Cream Cheese':         { unit:'g',     cost:0.60,  cat:'Dairy' },
+  'Heavy Cream':          { unit:'ml',    cost:0.35,  cat:'Dairy' },
+  'Whipping Cream':       { unit:'ml',    cost:0.30,  cat:'Dairy' },
+  'Baking Powder':        { unit:'g',     cost:0.20,  cat:'Leavening' },
+  'Baking Soda':          { unit:'g',     cost:0.08,  cat:'Leavening' },
+  'Yeast':                { unit:'g',     cost:0.30,  cat:'Leavening' },
+  'Cream of Tartar':      { unit:'g',     cost:0.50,  cat:'Leavening' },
+  'Salt':                 { unit:'g',     cost:0.02,  cat:'Spices' },
+  'Cardamom Powder':      { unit:'g',     cost:2.00,  cat:'Spices' },
+  'Vanilla Extract':      { unit:'ml',    cost:0.80,  cat:'Flavouring' },
+  'Rose Water':           { unit:'ml',    cost:0.30,  cat:'Flavouring' },
+  'Lemon Juice':          { unit:'ml',    cost:0.15,  cat:'Flavouring' },
+  'Food Color':           { unit:'piece', cost:30.00, cat:'Flavouring' },
+  'Dark Chocolate':       { unit:'g',     cost:0.70,  cat:'Chocolate' },
+  'Milk Chocolate':       { unit:'g',     cost:0.65,  cat:'Chocolate' },
+  'Cocoa Powder':         { unit:'g',     cost:0.40,  cat:'Chocolate' },
+  'Blueberries':          { unit:'g',     cost:0.40,  cat:'Fruits' },
+  'Strawberries':         { unit:'g',     cost:0.30,  cat:'Fruits' },
+  'Cherries':             { unit:'g',     cost:0.35,  cat:'Fruits' },
+  'Pineapple':            { unit:'g',     cost:0.12,  cat:'Fruits' },
+  'Carrots (grated)':     { unit:'g',     cost:0.05,  cat:'Fruits' },
+  'Mango Pulp':           { unit:'ml',    cost:0.10,  cat:'Fruits' },
+  'Walnuts':              { unit:'g',     cost:1.00,  cat:'Nuts & Dry Fruits' },
+  'Cashews':              { unit:'g',     cost:0.80,  cat:'Nuts & Dry Fruits' },
+  'Pistachios':           { unit:'g',     cost:1.50,  cat:'Nuts & Dry Fruits' },
+  'Dried Fruit Mix':      { unit:'g',     cost:0.50,  cat:'Nuts & Dry Fruits' },
+  'Gelatin':              { unit:'g',     cost:0.50,  cat:'Other' },
+};
+const BASE_VARIETIES = [
+  'Chocolate Cake','Vanilla Cake','Black Forest Cake',
+  'Cheesecake','Croissant','Blueberry Muffin',
+  'Brownie','Macarons','Carrot Cake','Pineapple Cake',
+  'Mango Cake','Fruit Cake'
+];
+
+const RECIPES = {
+  'Chocolate Cake': [
+    {name:'All Purpose Flour',qty:250,unit:'g'},{name:'Sugar',qty:200,unit:'g'},
+    {name:'Butter',qty:100,unit:'g'},{name:'Eggs',qty:3,unit:'piece'},
+    {name:'Cocoa Powder',qty:50,unit:'g'},{name:'Baking Powder',qty:5,unit:'g'},
+    {name:'Milk',qty:200,unit:'ml'},{name:'Vanilla Extract',qty:5,unit:'ml'},
+  ],
+  'Vanilla Cake': [
+    {name:'All Purpose Flour',qty:250,unit:'g'},{name:'Sugar',qty:200,unit:'g'},
+    {name:'Butter',qty:150,unit:'g'},{name:'Eggs',qty:3,unit:'piece'},
+    {name:'Milk',qty:150,unit:'ml'},{name:'Vanilla Extract',qty:10,unit:'ml'},
+    {name:'Baking Powder',qty:8,unit:'g'},
+  ],
+  'Black Forest Cake': [
+    {name:'All Purpose Flour',qty:200,unit:'g'},{name:'Sugar',qty:180,unit:'g'},
+    {name:'Butter',qty:100,unit:'g'},{name:'Eggs',qty:4,unit:'piece'},
+    {name:'Cocoa Powder',qty:60,unit:'g'},{name:'Whipping Cream',qty:300,unit:'ml'},
+    {name:'Dark Chocolate',qty:100,unit:'g'},{name:'Cherries',qty:200,unit:'g'},
+  ],
+  'Cheesecake': [
+    {name:'Cream Cheese',qty:500,unit:'g'},{name:'Sugar',qty:150,unit:'g'},
+    {name:'Eggs',qty:3,unit:'piece'},{name:'Heavy Cream',qty:200,unit:'ml'},
+    {name:'Butter',qty:100,unit:'g'},{name:'All Purpose Flour',qty:80,unit:'g'},
+    {name:'Vanilla Extract',qty:5,unit:'ml'},
+  ],
+  'Croissant': [
+    {name:'All Purpose Flour',qty:500,unit:'g'},{name:'Butter',qty:300,unit:'g'},
+    {name:'Sugar',qty:50,unit:'g'},{name:'Salt',qty:10,unit:'g'},
+    {name:'Milk',qty:200,unit:'ml'},{name:'Yeast',qty:7,unit:'g'},
+  ],
+  'Blueberry Muffin': [
+    {name:'All Purpose Flour',qty:250,unit:'g'},{name:'Sugar',qty:150,unit:'g'},
+    {name:'Butter',qty:100,unit:'g'},{name:'Eggs',qty:2,unit:'piece'},
+    {name:'Blueberries',qty:150,unit:'g'},{name:'Milk',qty:100,unit:'ml'},
+    {name:'Baking Powder',qty:10,unit:'g'},
+  ],
+  'Brownie': [
+    {name:'Dark Chocolate',qty:200,unit:'g'},{name:'Butter',qty:150,unit:'g'},
+    {name:'Sugar',qty:200,unit:'g'},{name:'Eggs',qty:3,unit:'piece'},
+    {name:'All Purpose Flour',qty:100,unit:'g'},{name:'Cocoa Powder',qty:30,unit:'g'},
+  ],
+  'Macarons': [
+    {name:'Almond Flour',qty:150,unit:'g'},{name:"Confectioner's Sugar",qty:150,unit:'g'},
+    {name:'Eggs',qty:2,unit:'piece'},{name:'Sugar',qty:100,unit:'g'},
+    {name:'Butter',qty:80,unit:'g'},{name:'Food Color',qty:1,unit:'piece'},
+  ],
+  'Carrot Cake': [
+    {name:'All Purpose Flour',qty:250,unit:'g'},{name:'Sugar',qty:200,unit:'g'},
+    {name:'Vegetable Oil',qty:150,unit:'ml'},{name:'Eggs',qty:3,unit:'piece'},
+    {name:'Carrots (grated)',qty:300,unit:'g'},{name:'Walnuts',qty:100,unit:'g'},
+    {name:'Baking Soda',qty:5,unit:'g'},{name:'Cream Cheese',qty:200,unit:'g'},
+  ],
+  'Pineapple Cake': [
+    {name:'All Purpose Flour',qty:250,unit:'g'},{name:'Sugar',qty:200,unit:'g'},
+    {name:'Butter',qty:100,unit:'g'},{name:'Eggs',qty:3,unit:'piece'},
+    {name:'Pineapple',qty:300,unit:'g'},{name:'Whipping Cream',qty:200,unit:'ml'},
+    {name:'Baking Powder',qty:5,unit:'g'},
+  ],
+  'Mango Cake': [
+    {name:'All Purpose Flour',qty:250,unit:'g'},{name:'Sugar',qty:180,unit:'g'},
+    {name:'Butter',qty:100,unit:'g'},{name:'Eggs',qty:3,unit:'piece'},
+    {name:'Mango Pulp',qty:200,unit:'ml'},{name:'Whipping Cream',qty:200,unit:'ml'},
+    {name:'Baking Powder',qty:5,unit:'g'},{name:'Vanilla Extract',qty:5,unit:'ml'},
+  ],
+  'Fruit Cake': [
+    {name:'All Purpose Flour',qty:250,unit:'g'},{name:'Sugar',qty:200,unit:'g'},
+    {name:'Butter',qty:150,unit:'g'},{name:'Eggs',qty:4,unit:'piece'},
+    {name:'Dried Fruit Mix',qty:300,unit:'g'},{name:'Cashews',qty:100,unit:'g'},
+    {name:'Baking Powder',qty:5,unit:'g'},
+  ],
+};
+
+const UNITS = ['g','kg','ml','L','piece','tsp','tbsp','cup'];
+
+const APPS_SCRIPT_CODE = `function doPost(e) {
+  try {
+    var payload = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    if (payload.action === 'save') {
+      var r = payload.record;
+      var sheet = ss.getSheetByName('Records');
+      if (!sheet) {
+        sheet = ss.insertSheet('Records');
+        sheet.appendRow([
+          'ID','Date','Variety','Batch (pcs)',
+          'Ingredient Cost (₹)','Overhead Cost (₹)',
+          'Subtotal (₹)','Profit %','Profit (₹)',
+          'Selling Price (₹)','Cost/Piece (₹)',
+          'Selling Price/Piece (₹)','Market Comparison'
+        ]);
+        sheet.getRange(1,1,1,13).setFontWeight('bold');
+      }
+      var d = new Date(r.date);
+      sheet.appendRow([
+        r.id, d.toLocaleString(), r.variety, r.batch,
+        r.ingCost, r.overCost, r.sub,
+        r.profitPct + '%', r.profit, r.sellPrice,
+        r.perPieceCost, r.sellPerPiece,
+        r.marketComparison || ''
+      ]);
+    }
+
+    return ContentService
+      .createTextOutput(JSON.stringify({status:'ok'}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({status:'error',msg:err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
+
+// ============================================================
+//  STATE
+// ============================================================
+let currentVariety = null;
+let varieties = [];
+let ingredients = [];
+let overheads = [];
+let lastResult = null;
+let appSettings = {};
+const GS_URL = 'https://script.google.com/macros/s/AKfycbxWfj-4xVDFASpzJkYGg2fiJluIqGpc0EVIsTq4Yk2UgI0rzsGh0Q7RTFlSZz2b3T_U/exec';
+let autoSyncTimer = null;
+
+// ============================================================
+//  INIT
+// ============================================================
+function init() {
+  // Load settings
+  appSettings = JSON.parse(localStorage.getItem('bakecost_settings') || '{}');
+  // GS_URL is hardwired above
+  if (appSettings.apiKey) {
+    document.getElementById('api-key-input').value = appSettings.apiKey;
+    document.getElementById('api-key-status').style.display = 'block';
+  }
+  if (appSettings.defaultProfit) {
+    document.getElementById('default-profit').value = appSettings.defaultProfit;
+    document.getElementById('profit-pct').value = appSettings.defaultProfit;
+  }
+  if (appSettings.currency) document.getElementById('currency-sym').value = appSettings.currency;
+
+  // Load custom ingredient prices (merge saved, preserving cat for built-ins)
+  const savedDB = localStorage.getItem('bakecost_ingdb');
+  if (savedDB) {
+    try {
+      const parsed = JSON.parse(savedDB);
+      // Merge: keep cat from DEFAULT if saved entry lacks it
+      Object.entries(parsed).forEach(([k, v]) => {
+        ING_DB[k] = { cat: (ING_DB[k] && ING_DB[k].cat) || v.cat || 'Other', ...v };
+      });
+    } catch(e) {}
+  }
+
+  // Load varieties
+  const extraVarieties = JSON.parse(localStorage.getItem('bakecost_varieties') || '[]');
+  varieties = [...BASE_VARIETIES];
+  extraVarieties.forEach(v => { if (!varieties.includes(v)) varieties.push(v); });
+
+  renderVarietyGrid();
+  populateIngDatalist();
+  renderIngDBTable();
+  document.getElementById('apps-script-display').textContent = APPS_SCRIPT_CODE;
+  var _off = localStorage.getItem('bakecost_autosync_off') === '1';
+  var _tgl = document.getElementById('autosync-toggle');
+  if (_tgl) _tgl.checked = !_off;
+  var _ms = localStorage.getItem('bakecost_sync_interval');
+  if (_ms) { var _sel = document.getElementById('autosync-interval'); if (_sel) _sel.value = _ms; }
+  updateSyncStatus();
+  if (!_off) startAutoSync();
+
+  recalcWeight();
+  // Show empty state initially
+  document.getElementById('ing-tbody').innerHTML = `<tr><td colspan="6" class="empty-state">← Select a pastry variety to load its recipe</td></tr>`;
+  document.getElementById('overhead-tbody').innerHTML = `<tr><td colspan="4" class="empty-state">← Select a pastry variety first</td></tr>`;
+}
+
+// ============================================================
+//  VARIETY
+// ============================================================
+function renderVarietyGrid() {
+  document.getElementById('variety-grid').innerHTML = varieties.map(v =>
+    `<button class="variety-chip ${currentVariety===v?'selected':''}"
+      onclick="selectVariety(this,'${escQ(v)}')">${v}</button>`
+  ).join('');
+}
+
+function escQ(s) { return s.replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+
+function selectVariety(el, v) {
+  currentVariety = v;
+  document.querySelectorAll('.variety-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  loadRecipe(v);
+}
+
+function addVariety() {
+  const inp = document.getElementById('new-variety-input');
+  const v = inp.value.trim();
+  if (!v) return showToast('Enter a variety name');
+  if (varieties.includes(v)) { selectVariety(document.querySelector(`.variety-chip:nth-child(${varieties.indexOf(v)+1})`), v); return; }
+  varieties.push(v);
+  const saved = JSON.parse(localStorage.getItem('bakecost_varieties') || '[]');
+  saved.push(v);
+  localStorage.setItem('bakecost_varieties', JSON.stringify(saved));
+  renderVarietyGrid();
+  inp.value = '';
+  // Select the last chip
+  const chips = document.querySelectorAll('.variety-chip');
+  selectVariety(chips[chips.length-1], v);
+}
+
+function loadRecipe(v) {
+  const recipe = RECIPES[v];
+  if (recipe) {
+    ingredients = recipe.map(r => ({
+      name: r.name,
+      qty: r.qty,
+      unit: r.unit,
+      costPerUnit: ING_DB[r.name] ? ING_DB[r.name].cost : 0,
+    }));
+  } else {
+    ingredients = [{ name:'', qty:0, unit:'g', costPerUnit:0 }];
+  }
+  renderIngredientsTable();
+  overheads = [];
+  suggestOverheads();
+  recalcWeight();
+  document.getElementById('results-card').style.display = 'none';
+  document.getElementById('compare-section').style.display = 'none';
+  lastResult = null;
+}
+
+// ============================================================
+//  INGREDIENTS
+// ============================================================
+function renderIngredientsTable() {
+  const tbody = document.getElementById('ing-tbody');
+  if (ingredients.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No ingredients. Click "+ Add Ingredient".</td></tr>`;
+    updateIngTotal(); return;
+  }
+  tbody.innerHTML = ingredients.map((ing, i) => `
+    <tr id="ing-r-${i}">
+      <td><input type="text" list="ing-datalist" value="${escHtml(ing.name)}"
+        style="min-width:175px;" placeholder="Ingredient name"
+        onchange="onIngName(${i},this.value)"></td>
+      <td><input type="number" value="${ing.qty}" min="0" step="0.01" style="width:86px;"
+        oninput="onIngQty(${i},this.value)"></td>
+      <td><select style="width:72px;" onchange="onIngUnit(${i},this.value)">
+        ${UNITS.map(u=>`<option ${u===ing.unit?'selected':''}>${u}</option>`).join('')}
+      </select></td>
+      <td><input type="number" value="${ing.costPerUnit}" min="0" step="0.001" style="width:100px;"
+        oninput="onIngCost(${i},this.value)"></td>
+      <td style="font-weight:600; color:var(--brown);">
+        ₹ <span id="ir-${i}">${(ing.qty*ing.costPerUnit).toFixed(2)}</span>
+      </td>
+      <td><button class="btn-icon" onclick="removeIngredient(${i})" title="Remove">🗑️</button></td>
+    </tr>`).join('');
+  updateIngTotal();
+}
+
+function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function onIngName(i, val) {
+  ingredients[i].name = val;
+  if (ING_DB[val]) {
+    ingredients[i].costPerUnit = ING_DB[val].cost;
+    renderIngredientsTable();
+  }
+}
+function onIngQty(i, val) {
+  ingredients[i].qty = parseFloat(val)||0;
+  const el = document.getElementById(`ir-${i}`);
+  if (el) el.textContent = (ingredients[i].qty * ingredients[i].costPerUnit).toFixed(2);
+  updateIngTotal(); recalcSummary(); recalcWeight();
+}
+function onIngUnit(i, val) { ingredients[i].unit = val; }
+function onIngCost(i, val) {
+  ingredients[i].costPerUnit = parseFloat(val)||0;
+  const el = document.getElementById(`ir-${i}`);
+  if (el) el.textContent = (ingredients[i].qty * ingredients[i].costPerUnit).toFixed(2);
+  updateIngTotal(); recalcSummary(); recalcWeight();
+}
+function addIngredient() {
+  ingredients.push({name:'', qty:0, unit:'g', costPerUnit:0});
+  renderIngredientsTable();
+}
+function removeIngredient(i) {
+  ingredients.splice(i,1);
+  renderIngredientsTable();
+  recalcSummary();
+}
+function getIngTotal() {
+  return ingredients.reduce((s,i)=>s+(i.qty*i.costPerUnit),0);
+}
+function updateIngTotal() {
+  document.getElementById('ing-total').textContent = getIngTotal().toFixed(2);
+}
+function populateIngDatalist() {
+  document.getElementById('ing-datalist').innerHTML =
+    Object.keys(ING_DB).map(k=>`<option value="${escHtml(k)}">`).join('');
+}
+
+// ============================================================
+//  OVERHEADS
+// ============================================================
+function suggestOverheads() {
+  const base = Math.max(getIngTotal(), 50);
+  overheads = [
+    {name:'Electricity & Gas',       amount:+(base*0.15).toFixed(2), notes:'~15% of ingredient cost'},
+    {name:'Equipment Depreciation',  amount:+(base*0.10).toFixed(2), notes:'~10% of ingredient cost'},
+    {name:'Employee / Labor Cost',   amount:+(base*0.25).toFixed(2), notes:'~25% of ingredient cost'},
+    {name:'Packaging & Labeling',    amount:+(base*0.08).toFixed(2), notes:'~8% of ingredient cost'},
+    {name:'Miscellaneous',           amount:+(base*0.05).toFixed(2), notes:'~5% of ingredient cost'},
+  ];
+  renderOverheadsTable();
+  recalcSummary();
+}
+
+function renderOverheadsTable() {
+  const tbody = document.getElementById('overhead-tbody');
+  if (overheads.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" class="empty-state">No overheads. Click "+ Add Overhead" or "Re-suggest".</td></tr>`;
+    updateOverheadTotal(); return;
+  }
+  tbody.innerHTML = overheads.map((oh,i) => `
+    <tr>
+      <td><input type="text" value="${escHtml(oh.name)}" style="min-width:185px;"
+        oninput="overheads[${i}].name=this.value"></td>
+      <td><input type="number" value="${oh.amount}" min="0" step="0.01" style="width:110px;"
+        oninput="onOverheadAmt(${i},this.value)"></td>
+      <td><input type="text" value="${escHtml(oh.notes)}" style="min-width:165px; color:var(--muted);"
+        oninput="overheads[${i}].notes=this.value"></td>
+      <td><button class="btn-icon" onclick="removeOverhead(${i})">🗑️</button></td>
+    </tr>`).join('');
+  updateOverheadTotal();
+}
+function onOverheadAmt(i, val) {
+  overheads[i].amount = parseFloat(val)||0;
+  updateOverheadTotal(); recalcSummary();
+}
+function addOverhead() {
+  overheads.push({name:'', amount:0, notes:''});
+  renderOverheadsTable();
+}
+function removeOverhead(i) {
+  overheads.splice(i,1);
+  renderOverheadsTable(); recalcSummary();
+}
+function getOverTotal() {
+  return overheads.reduce((s,o)=>s+o.amount,0);
+}
+function updateOverheadTotal() {
+  document.getElementById('overhead-total').textContent = getOverTotal().toFixed(2);
+}
+
+// ============================================================
+//  LIVE SUMMARY
+// ============================================================
+function recalcSummary() {
+  const ing = getIngTotal();
+  const over = getOverTotal();
+  const sub = ing + over;
+  const pct = parseFloat(document.getElementById('profit-pct').value)||0;
+  const profit = sub * pct / 100;
+  document.getElementById('sum-ing').textContent    = ing.toFixed(2);
+  document.getElementById('sum-over').textContent   = over.toFixed(2);
+  document.getElementById('sum-sub').textContent    = sub.toFixed(2);
+  document.getElementById('sum-profit').textContent = profit.toFixed(2);
+}
+
+
+// ============================================================
+//  WEIGHT ESTIMATION
+// ============================================================
+const UNIT_TO_G = {
+  'g': 1, 'kg': 1000,
+  'ml': 1, 'L': 1000,
+  'tsp': 5, 'tbsp': 15, 'cup': 240,
+  'piece': null  // non-measurable by weight
+};
+
+function getIngWeightG(ing) {
+  const factor = UNIT_TO_G[ing.unit];
+  if (factor === null || factor === undefined) return null; // skip pieces
+  return ing.qty * factor;
+}
+
+function getRawWeightG() {
+  return ingredients.reduce((sum, ing) => {
+    const w = getIngWeightG(ing);
+    return sum + (w !== null ? w : 0);
+  }, 0);
+}
+
+function recalcWeight() {
+  const rawG  = getRawWeightG();
+  const lossPct = parseFloat(document.getElementById('baking-loss-pct').value) || 15;
+  const lossG   = rawG * lossPct / 100;
+  const theoryG = rawG - lossG;
+  const batch   = Math.max(1, parseInt(document.getElementById('batch-size').value) || 1);
+  const theoryPcG = theoryG / batch;
+
+  // Update breakdown table
+  renderWeightBreakdown(rawG);
+
+  // Update stat boxes
+  document.getElementById('raw-weight-total').textContent = rawG.toFixed(0);
+  document.getElementById('ws-raw').textContent    = rawG.toFixed(0) + ' g';
+  document.getElementById('ws-loss').textContent   = lossG.toFixed(0) + ' g (' + lossPct + '%)';
+  document.getElementById('ws-theory').textContent = theoryG.toFixed(0) + ' g';
+  document.getElementById('ws-theory-pc').textContent = theoryPcG.toFixed(0) + ' g / pc';
+
+  // Actual weight
+  const actualInp = document.getElementById('actual-weight');
+  const actualG = parseFloat(actualInp.value) || 0;
+  if (actualG > 0 && !document.getElementById('actual-weight-pc').dataset.manualEdit) {
+    document.getElementById('actual-weight-pc').value = (actualG / batch).toFixed(1);
+  }
+
+  showWeightComparison(theoryG, actualG, batch);
+
+  // Also refresh results panel if visible
+  if (document.getElementById('results-card').style.display !== 'none') {
+    updateWeightResults(rawG, theoryG, theoryPcG, actualG, batch);
+  }
+}
+
+function recalcWeightFromPiece() {
+  const pcInp = document.getElementById('actual-weight-pc');
+  pcInp.dataset.manualEdit = '1';
+  const batch = Math.max(1, parseInt(document.getElementById('batch-size').value) || 1);
+  const pcVal = parseFloat(pcInp.value) || 0;
+  if (pcVal > 0) {
+    document.getElementById('actual-weight').value = (pcVal * batch).toFixed(1);
+  }
+  recalcWeight();
+  setTimeout(() => { delete pcInp.dataset.manualEdit; }, 100);
+}
+
+function renderWeightBreakdown(rawG) {
+  const tbody = document.getElementById('weight-breakdown-tbody');
+  if (!tbody) return;
+  const rows = ingredients.map(ing => {
+    const w = getIngWeightG(ing);
+    if (w === null) {
+      return `<tr>
+        <td style="color:var(--dark);">${ing.name || '—'}</td>
+        <td style="text-align:right; color:var(--muted); font-style:italic; font-size:0.8rem;">—</td>
+        <td style="text-align:right; font-size:0.75rem; color:var(--muted);">piece (skip)</td>
+      </tr>`;
+    }
+    const pct = rawG > 0 ? (w/rawG*100).toFixed(1) : 0;
+    return `<tr>
+      <td style="color:var(--dark);">${ing.name || '—'}</td>
+      <td style="text-align:right; font-weight:600; color:var(--brown);">${w.toFixed(0)}</td>
+      <td style="text-align:right; font-size:0.77rem; color:var(--muted);">${pct}%</td>
+    </tr>`;
+  }).join('');
+  tbody.innerHTML = rows || '<tr><td colspan="3" class="empty-state">No ingredients yet</td></tr>';
+}
+
+function showWeightComparison(theoryG, actualG, batch) {
+  const box = document.getElementById('weight-comparison-box');
+  if (!box) return;
+  if (actualG <= 0) {
+    box.style.display = 'none';
+    return;
+  }
+  box.style.display = 'block';
+  const diff    = actualG - theoryG;
+  const yieldPct = theoryG > 0 ? (actualG / theoryG * 100) : 0;
+  const actualPcG = (actualG / batch).toFixed(1);
+  let verdictColor, verdictText;
+  if (yieldPct >= 95)      { verdictColor='rgba(46,125,50,0.12); color:#1b5e20'; verdictText='🎉 Excellent yield! Your actual weight closely matches the theoretical estimate.'; }
+  else if (yieldPct >= 85) { verdictColor='rgba(200,150,30,0.12); color:#5c3c00'; verdictText='✅ Good yield. Minor variation is normal due to evaporation and handling.'; }
+  else if (yieldPct >= 70) { verdictColor='rgba(232,93,4,0.10); color:#7a2e00'; verdictText='⚠️ Moderate loss. Check oven temperature and baking time.'; }
+  else                      { verdictColor='rgba(198,40,40,0.10); color:#7f0000'; verdictText='❌ High loss. Consider adjusting recipe moisture or baking conditions.'; }
+
+  box.innerHTML = `
+    <div style="background:rgba(200,150,30,0.06); border:1px solid var(--border); border-radius:10px; padding:14px;">
+      <div style="font-size:0.76rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:10px;">Actual vs Theoretical</div>
+      <div class="wt-compare-row"><span style="color:var(--muted);">Theoretical Baked</span><span style="font-weight:700;">${theoryG.toFixed(0)} g</span></div>
+      <div class="wt-compare-row"><span style="color:var(--muted);">Actual Baked</span><span style="font-weight:700; color:var(--green);">${actualG.toFixed(0)} g (${actualPcG} g/pc)</span></div>
+      <div class="wt-compare-row"><span style="color:var(--muted);">Difference</span>
+        <span style="font-weight:700; color:${diff>=0?'var(--green)':'var(--red)'}">${diff>=0?'+':''}${diff.toFixed(0)} g</span>
+      </div>
+      <div class="wt-compare-row" style="border-bottom:none;"><span style="color:var(--muted);">Yield %</span>
+        <span style="font-weight:700;">${yieldPct.toFixed(1)}%</span>
+      </div>
+      <div class="wt-bar-wrap">
+        <div class="wt-bar-fill" style="width:${Math.min(yieldPct,100).toFixed(1)}%"></div>
+      </div>
+      <div style="background:${verdictColor}; border-radius:7px; padding:8px 12px; font-size:0.82rem; font-weight:600;">${verdictText}</div>
+    </div>`;
+}
+
+function updateWeightResults(rawG, theoryG, theoryPcG, actualG, batch) {
+  document.getElementById('rr-raw').textContent      = rawG.toFixed(0) + ' g';
+  document.getElementById('rr-theory').textContent   = theoryG.toFixed(0) + ' g';
+  document.getElementById('rr-theory-pc').textContent = theoryPcG.toFixed(0) + ' g/pc';
+
+  if (actualG > 0) {
+    const actualBox = document.getElementById('rr-actual-box');
+    actualBox.style.display = 'block';
+    document.getElementById('rr-actual').textContent = actualG.toFixed(0) + ' g';
+    // Fill comparison panel
+    const panel = document.getElementById('rr-compare-panel');
+    panel.style.display = 'block';
+    const diff = actualG - theoryG;
+    const yieldPct = theoryG > 0 ? (actualG/theoryG*100) : 0;
+    document.getElementById('rr-cp-theory').textContent = theoryG.toFixed(0) + ' g';
+    document.getElementById('rr-cp-actual').textContent = actualG.toFixed(0) + ' g';
+    document.getElementById('rr-cp-diff').textContent   = (diff >= 0 ? '+' : '') + diff.toFixed(0) + ' g';
+    document.getElementById('rr-cp-yield').textContent  = yieldPct.toFixed(1) + '%';
+    const bar = document.getElementById('rr-bar');
+    bar.style.width = Math.min(yieldPct,100).toFixed(1) + '%';
+    document.getElementById('rr-bar-label').textContent = yieldPct.toFixed(1) + '%';
+    let verdictColor, verdictText;
+    if (yieldPct >= 95)      { verdictColor='rgba(46,125,50,0.12)'; verdictText='🎉 Excellent yield — actual weight closely matches estimate.'; }
+    else if (yieldPct >= 85) { verdictColor='rgba(200,150,30,0.12)'; verdictText='✅ Good yield — minor variation is expected.'; }
+    else if (yieldPct >= 70) { verdictColor='rgba(232,93,4,0.10)'; verdictText='⚠️ Moderate loss — check oven temp & bake time.'; }
+    else                      { verdictColor='rgba(198,40,40,0.10)'; verdictText='❌ High loss — adjust recipe moisture or baking conditions.'; }
+    const verdict = document.getElementById('rr-verdict');
+    verdict.style.background = verdictColor;
+    verdict.textContent = verdictText;
+  } else {
+    document.getElementById('rr-actual-box').style.display = 'none';
+    document.getElementById('rr-compare-panel').style.display = 'none';
+  }
+}
+
+// ============================================================
+//  CALCULATE
+// ============================================================
+function calculate() {
+  if (!currentVariety) return showToast('⚠️ Please select a pastry variety first');
+  if (ingredients.length===0 || getIngTotal()===0)
+    return showToast('⚠️ Add ingredients with quantities and costs');
+
+  const ing  = getIngTotal();
+  const over = getOverTotal();
+  const sub  = ing + over;
+  const pct  = parseFloat(document.getElementById('profit-pct').value)||0;
+  const profit = sub * pct / 100;
+  const sell = sub + profit;
+  const batch = Math.max(1, parseInt(document.getElementById('batch-size').value)||1);
+
+  const rawG    = getRawWeightG();
+  const lossPct = parseFloat(document.getElementById('baking-loss-pct').value) || 15;
+  const theoryG = rawG * (1 - lossPct/100);
+  const actualG = parseFloat(document.getElementById('actual-weight').value) || 0;
+
+  lastResult = {
+    variety: currentVariety,
+    date: new Date().toISOString(),
+    batch,
+    ingredients: ingredients.map(i=>({...i})),
+    overheads: overheads.map(o=>({...o})),
+    ingCost:  +ing.toFixed(2),
+    overCost: +over.toFixed(2),
+    sub:      +sub.toFixed(2),
+    profitPct: pct,
+    profit:   +profit.toFixed(2),
+    sellPrice:+sell.toFixed(2),
+    perPieceCost: +(sub/batch).toFixed(2),
+    sellPerPiece: +(sell/batch).toFixed(2),
+    profitPerPiece: +(profit/batch).toFixed(2),
+    rawWeightG:    +rawG.toFixed(0),
+    theoryWeightG: +theoryG.toFixed(0),
+    theoryWeightPcG: +(theoryG/batch).toFixed(1),
+    bakingLossPct: lossPct,
+    actualWeightG: actualG > 0 ? +actualG.toFixed(0) : null,
+    actualWeightPcG: actualG > 0 ? +(actualG/batch).toFixed(1) : null,
+    marketComparison: '',
+  };
+
+  document.getElementById('res-total-batch').textContent  = sub.toFixed(2);
+  document.getElementById('res-cost-piece').textContent   = (sub/batch).toFixed(2);
+  document.getElementById('res-sell-batch').textContent   = sell.toFixed(2);
+  document.getElementById('res-sell-piece').textContent   = (sell/batch).toFixed(2);
+  document.getElementById('res-profit-piece').textContent = (profit/batch).toFixed(2);
+
+  const rc = document.getElementById('results-card');
+  rc.style.display = 'block';
+  // populate weight results panel
+  updateWeightResults(rawG, theoryG, theoryG/batch, actualG, batch);
+  rc.scrollIntoView({behavior:'smooth', block:'nearest'});
+  showToast('✅ Calculation complete!');
+}
+
+// ============================================================
+//  AI PRICE COMPARISON
+// ============================================================
+async function comparePrice() {
+  if (!lastResult) {
+    calculate();
+    if (!lastResult) return;
+  }
+  const section = document.getElementById('compare-section');
+  const box = document.getElementById('compare-box');
+  section.style.display = 'block';
+  box.innerHTML = '<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-size:0.88rem;"><div class="spinner"></div> Fetching market price comparison from the web…</div>';
+  section.scrollIntoView({behavior:'smooth', block:'nearest'});
+
+  const prompt = `I am a home baker in India. I have calculated production costs for "${lastResult.variety}":
+- Total ingredient cost: ₹${lastResult.ingCost} for a batch of ${lastResult.batch} piece(s)
+- Total overheads (electricity, labor, packaging, etc.): ₹${lastResult.overCost}
+- Total production cost: ₹${lastResult.sub}
+- My calculated selling price: ₹${lastResult.sellPerPiece} per piece (${lastResult.profitPct}% profit margin)
+- Batch size: ${lastResult.batch} piece(s)
+
+Please do a web search and provide:
+1. Typical market selling price range for ${lastResult.variety} in Indian bakeries, cafes, and online delivery platforms (Swiggy, Zomato) — in INR.
+2. A brief assessment: Is my selling price of ₹${lastResult.sellPerPiece}/piece competitive, too high, or too low?
+3. One practical recommendation to optimize pricing.
+
+Be concise and use specific INR price ranges.`;
+
+  const apiKey = appSettings.apiKey || '';
+  if (!apiKey) {
+    box.innerHTML = `<div style="color:var(--red);font-weight:600;">⚠️ Anthropic API Key not set.</div>
+<div style="margin-top:8px;font-size:0.84rem;color:var(--dark);line-height:1.7;">
+To enable market price comparison:<br>
+1. Go to <b>⚙️ Settings → API Key</b><br>
+2. Get your free API key from <a href="https://console.anthropic.com" target="_blank" style="color:var(--gold);">console.anthropic.com</a><br>
+3. Paste it there and click <b>Save Settings</b>, then try again.
+</div>`;
+    return;
+  }
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({}));
+      const msg = err?.error?.message || `HTTP ${res.status}`;
+      if (res.status === 401) {
+        box.innerHTML = `<span style="color:var(--red);">❌ Invalid API key. Please check your key in ⚙️ Settings.</span>`;
+      } else {
+        box.textContent = `API error: ${msg}`;
+      }
+      return;
+    }
+    const data = await res.json();
+    const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+    box.textContent = text || 'No comparison data returned.';
+    if (lastResult) lastResult.marketComparison = text;
+  } catch (err) {
+    box.textContent = 'Could not fetch market comparison. Check your internet connection and try again.';
+    console.error(err);
+  }
+}
+
+// ============================================================
+//  SAVE RECORD
+// ============================================================
+function saveRecord() {
+  if (!lastResult) return showToast('Please calculate first');
+  const records = JSON.parse(localStorage.getItem('bakecost_records')||'[]');
+  const record  = {...lastResult, id: Date.now(), synced: false};
+  records.unshift(record);
+  localStorage.setItem('bakecost_records', JSON.stringify(records));
+  showToast('✅ Record saved!');
+  syncOneRecord(record);
+}
+
+async function syncOneRecord(record) {
+  try {
+    await fetch(GS_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({action: 'save', record})
+    });
+    markRecordSynced(record.id);
+    updateSyncStatus();
+    addSyncLog('Synced: ' + record.variety);
+    return true;
+  } catch(e) {
+    addSyncLog('Failed: ' + record.variety);
+    updateSyncStatus();
+    return false;
+  }
+}
+
+function markRecordSynced(id) {
+  var records = JSON.parse(localStorage.getItem('bakecost_records')||'[]');
+  var rec = records.find(function(r){ return r.id === id; });
+  if (rec) { rec.synced = true; rec.syncedAt = new Date().toISOString(); }
+  localStorage.setItem('bakecost_records', JSON.stringify(records));
+}
+
+// ============================================================
+//  RECORDS
+// ============================================================
+function loadRecords() {
+  const records = JSON.parse(localStorage.getItem('bakecost_records')||'[]');
+  const tbody = document.getElementById('records-tbody');
+  if (records.length===0) {
+    tbody.innerHTML = `<tr><td colspan="10" class="empty-state">No records yet. Calculate and save your first recipe!</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = records.map((r,i)=>{
+    const d = new Date(r.date);
+    return `<tr class="rec-row" onclick="showHistory(${r.id})">
+      <td style="color:var(--muted);">${records.length-i}</td>
+      <td><div style="font-weight:600; white-space:nowrap;">${d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</div>
+          <div style="font-size:0.76rem; color:var(--muted);">${d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div></td>
+      <td><span class="badge badge-gold">${r.variety}</span></td>
+      <td>${r.batch} pc</td>
+      <td>₹${r.ingCost}</td>
+      <td>₹${r.overCost}</td>
+      <td>₹${r.sub}</td>
+      <td style="font-weight:700; color:var(--orange);">₹${r.sellPrice}</td>
+      <td style="font-weight:700; color:var(--brown);">₹${r.sellPerPiece}/pc</td>
+      <td style="text-align:center;font-size:1.05rem;cursor:default;" id="sync-badge-${r.id}" title="${r.synced?'Synced '+new Date(r.syncedAt||Date.now()).toLocaleTimeString():'Pending sync'}">${r.synced?'☁':'⏳'}</td>
+      <td onclick="event.stopPropagation()">
+        <button class="btn btn-outline btn-sm" onclick="showHistory(${r.id})">👁 View</button>
+        <button class="btn btn-danger btn-sm" style="margin-top:4px;" onclick="deleteRecord(${r.id})">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function showHistory(id) {
+  const records = JSON.parse(localStorage.getItem('bakecost_records')||'[]');
+  const r = records.find(x=>x.id===id);
+  if (!r) return;
+  const d = new Date(r.date);
+  document.getElementById('modal-title').textContent = `${r.variety}`;
+  document.getElementById('modal-body').innerHTML = `
+    <div style="color:var(--muted);font-size:0.83rem;margin-bottom:18px;">
+      📅 ${d.toLocaleString('en-IN')} &nbsp;|&nbsp; 🍰 Batch: ${r.batch} piece${r.batch>1?'s':''}
+    </div>
+
+    <div style="font-family:'Playfair Display',serif;color:var(--brown);font-size:0.95rem;margin-bottom:10px;">🧾 Ingredients</div>
+    <div class="table-wrap" style="margin-bottom:18px;">
+      <table class="cost-table">
+        <thead><tr><th>Ingredient</th><th>Qty</th><th>Unit</th><th>Cost/Unit</th><th style="text-align:right;">Total</th></tr></thead>
+        <tbody>
+          ${r.ingredients.map(ing=>`
+            <tr>
+              <td>${ing.name}</td><td>${ing.qty}</td><td>${ing.unit}</td>
+              <td>₹${ing.costPerUnit}</td>
+              <td style="text-align:right;font-weight:600;">₹${(ing.qty*ing.costPerUnit).toFixed(2)}</td>
+            </tr>`).join('')}
+          <tr style="background:rgba(200,150,30,0.07);">
+            <td colspan="4" style="text-align:right;font-weight:700;color:var(--brown);">Ingredient Total:</td>
+            <td style="text-align:right;font-weight:700;color:var(--brown);">₹${r.ingCost}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="font-family:'Playfair Display',serif;color:var(--brown);font-size:0.95rem;margin-bottom:10px;">⚙️ Overheads</div>
+    <div class="table-wrap" style="margin-bottom:20px;">
+      <table class="cost-table">
+        <thead><tr><th>Item</th><th>Notes</th><th style="text-align:right;">Amount</th></tr></thead>
+        <tbody>
+          ${r.overheads.map(oh=>`
+            <tr><td>${oh.name}</td><td style="color:var(--muted);font-size:0.8rem;">${oh.notes||''}</td>
+            <td style="text-align:right;font-weight:600;">₹${oh.amount}</td></tr>`).join('')}
+          <tr style="background:rgba(200,150,30,0.07);">
+            <td colspan="2" style="text-align:right;font-weight:700;color:var(--brown);">Overhead Total:</td>
+            <td style="text-align:right;font-weight:700;color:var(--brown);">₹${r.overCost}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="background:var(--dark);color:#fff;border-radius:12px;padding:18px;font-size:0.88rem;margin-bottom:${r.marketComparison?'18px':'4px'};">
+      <div style="display:flex;justify-content:space-between;margin-bottom:7px;"><span style="opacity:0.65;">Ingredient Cost:</span><span>₹${r.ingCost}</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:7px;"><span style="opacity:0.65;">Overheads:</span><span>₹${r.overCost}</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:7px;"><span style="opacity:0.65;">Subtotal:</span><span>₹${r.sub}</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px;"><span style="opacity:0.65;">Profit (${r.profitPct}%):</span><span style="color:#FFD580;">₹${r.profit}</span></div>
+      <div style="display:flex;justify-content:space-between;border-top:1px solid rgba(255,255,255,0.15);padding-top:10px;">
+        <span style="font-family:'Playfair Display',serif;font-weight:700;">Selling Price:</span>
+        <span style="color:var(--gold);font-weight:700;font-size:1.1rem;">₹${r.sellPrice} &nbsp;(₹${r.sellPerPiece}/pc)</span>
+      </div>
+    </div>
+
+    ${(r.rawWeightG||0) > 0 ? `
+      <div style="margin-top:18px;">
+        <div style="font-family:'Playfair Display',serif;color:var(--brown);font-size:0.95rem;margin-bottom:10px;">⚖️ Weight</div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px;">
+          <div class="summary-item"><div class="summary-label">Raw Ingredient Weight</div><div class="summary-value">${r.rawWeightG} g</div></div>
+          <div class="summary-item"><div class="summary-label">Theoretical Baked (${r.bakingLossPct}% loss)</div><div class="summary-value" style="color:var(--brown);">${r.theoryWeightG} g</div></div>
+          <div class="summary-item"><div class="summary-label">Theoretical Per Piece</div><div class="summary-value">${r.theoryWeightPcG} g</div></div>
+          ${r.actualWeightG ? `<div class="summary-item" style="background:rgba(46,125,50,0.07);border-color:rgba(46,125,50,0.3);"><div class="summary-label">Actual Baked Weight</div><div class="summary-value" style="color:var(--green);">${r.actualWeightG} g (${r.actualWeightPcG} g/pc)</div></div>` : '<div class="summary-item"><div class="summary-label">Actual Weight</div><div class="summary-value" style="color:var(--muted);font-size:0.9rem;">Not recorded</div></div>'}
+        </div>
+        ${r.actualWeightG ? (() => {
+          const diff = r.actualWeightG - r.theoryWeightG;
+          const yld  = r.theoryWeightG > 0 ? (r.actualWeightG/r.theoryWeightG*100).toFixed(1) : 0;
+          return `<div style="background:rgba(200,150,30,0.06);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:0.84rem;">
+            <span style="color:var(--muted);">Yield: </span><b>${yld}%</b> &nbsp;|&nbsp;
+            <span style="color:var(--muted);">Difference: </span><b style="color:${diff>=0?'var(--green)':'var(--red)'}">${diff>=0?'+':''}${diff} g</b>
+          </div>`;
+        })() : ''}
+      </div>` : ''}
+    ${r.marketComparison ? `
+      <div style="margin-top:18px;">
+        <div style="font-family:'Playfair Display',serif;color:var(--brown);font-size:0.95rem;margin-bottom:8px;">🌐 Market Comparison</div>
+        <div class="ai-box" style="font-size:0.82rem;">${escHtml(r.marketComparison)}</div>
+      </div>` : ''}
+  `;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function deleteRecord(id) {
+  if (!confirm('Delete this record?')) return;
+  let r = JSON.parse(localStorage.getItem('bakecost_records')||'[]');
+  r = r.filter(x=>x.id!==id);
+  localStorage.setItem('bakecost_records', JSON.stringify(r));
+  loadRecords();
+  showToast('Record deleted');
+}
+
+function clearAllRecords() {
+  if (!confirm('Clear ALL records? This cannot be undone.')) return;
+  localStorage.removeItem('bakecost_records');
+  loadRecords();
+  showToast('All records cleared');
+}
+
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+
+// ============================================================
+//  AUTO-SYNC ENGINE
+// ============================================================
+function startAutoSync() {
+  stopAutoSync();
+  var el = document.getElementById('autosync-interval');
+  var ms = el ? parseInt(el.value) : 60000;
+  autoSyncTimer = setInterval(runAutoSync, ms);
+  addSyncLog('Auto-sync ON every ' + (ms/1000) + 's');
+}
+function stopAutoSync() {
+  if (autoSyncTimer) { clearInterval(autoSyncTimer); autoSyncTimer = null; }
+}
+function toggleAutoSync() {
+  var on = document.getElementById('autosync-toggle').checked;
+  if (on) { startAutoSync(); localStorage.removeItem('bakecost_autosync_off'); showToast('Auto-sync enabled'); }
+  else    { stopAutoSync();  localStorage.setItem('bakecost_autosync_off','1'); showToast('Auto-sync paused'); }
+  updateSyncStatus();
+}
+function restartAutoSync() {
+  var ms = document.getElementById('autosync-interval').value;
+  localStorage.setItem('bakecost_sync_interval', ms);
+  if (document.getElementById('autosync-toggle').checked) { startAutoSync(); showToast('Interval updated'); }
+}
+async function runAutoSync() {
+  var records = JSON.parse(localStorage.getItem('bakecost_records')||'[]');
+  var pending = records.filter(function(r){ return !r.synced; });
+  if (!pending.length) { addSyncLog('Nothing pending — ' + new Date().toLocaleTimeString()); updateSyncStatus(); return; }
+  addSyncLog('Syncing ' + pending.length + ' record(s)...');
+  var ok = 0;
+  for (var i = 0; i < pending.length; i++) {
+    if (await syncOneRecord(pending[i])) ok++;
+    await new Promise(function(res){ setTimeout(res, 350); });
+  }
+  updateSyncStatus();
+  if (ok) showToast('☁ Synced ' + ok + ' record(s) to Google Sheets');
+}
+async function syncAllRecords() {
+  var records = JSON.parse(localStorage.getItem('bakecost_records')||'[]');
+  if (!records.length) { showToast('No records to sync'); return; }
+  addSyncLog('Manual sync-all: ' + records.length + ' records');
+  records.forEach(function(r){ r.synced = false; delete r.syncedAt; });
+  localStorage.setItem('bakecost_records', JSON.stringify(records));
+  updateSyncStatus();
+  showToast('Syncing ' + records.length + ' records...');
+  await runAutoSync();
+}
+function resetSyncFlags() {
+  if (!confirm('Mark all records as un-synced so they re-upload on next sync?')) return;
+  var records = JSON.parse(localStorage.getItem('bakecost_records')||'[]');
+  records.forEach(function(r){ r.synced = false; delete r.syncedAt; });
+  localStorage.setItem('bakecost_records', JSON.stringify(records));
+  updateSyncStatus(); showToast('Sync flags reset');
+}
+function updateSyncStatus() {
+  var records = JSON.parse(localStorage.getItem('bakecost_records')||'[]');
+  var synced  = records.filter(function(r){ return  r.synced; });
+  var pending = records.filter(function(r){ return !r.synced; });
+  var lastSync = '';
+  synced.forEach(function(r){ if ((r.syncedAt||''  ) > lastSync) lastSync = r.syncedAt||''  ; });
+  var e;
+  e = document.getElementById('sync-last-time'); if (e) e.textContent = lastSync ? new Date(lastSync).toLocaleTimeString('en-IN') : 'Never';
+  e = document.getElementById('sync-count');     if (e) e.textContent = synced.length;
+  e = document.getElementById('sync-pending');   if (e) { e.textContent = pending.length; e.style.color = pending.length ? 'var(--orange)' : 'var(--green)'; }
+  records.forEach(function(r) {
+    var b = document.getElementById('sync-badge-' + r.id);
+    if (b) { b.textContent = r.synced ? '☁' : '⏳'; b.title = r.synced ? 'Synced ' + (r.syncedAt ? new Date(r.syncedAt).toLocaleTimeString() : '') : 'Pending sync'; }
+  });
+}
+function addSyncLog(msg) {
+  var log = document.getElementById('sync-log');
+  if (!log) return;
+  log.style.display = 'block';
+  var d = document.createElement('div');
+  d.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+  log.insertBefore(d, log.firstChild);
+  while (log.children.length > 12) log.removeChild(log.lastChild);
+}
+
+// ============================================================
+//  SETTINGS
+// ============================================================
+function saveSettings() {
+  var key = document.getElementById('api-key-input').value.trim();
+  if (key) {
+    appSettings.apiKey = key;
+    var status = document.getElementById('api-key-status');
+    status.style.display = 'block';
+    setTimeout(function(){ status.style.display = 'none'; }, 3000);
+  }
+  localStorage.setItem('bakecost_settings', JSON.stringify(appSettings));
+  showToast('✅ Settings saved!');
+}
+
+function toggleApiKeyVisibility() {
+  const inp = document.getElementById('api-key-input');
+  const btn = document.getElementById('toggle-key-btn');
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    btn.textContent = '🙈 Hide';
+  } else {
+    inp.type = 'password';
+    btn.textContent = '👁 Show';
+  }
+}
+
+function saveDefaultSettings() {
+  appSettings.defaultProfit = document.getElementById('default-profit').value;
+  appSettings.currency = document.getElementById('currency-sym').value;
+  localStorage.setItem('bakecost_settings', JSON.stringify(appSettings));
+  document.getElementById('profit-pct').value = appSettings.defaultProfit;
+  showToast('✅ Defaults saved!');
+}
+
+
+// ============================================================
+//  INGREDIENT DATABASE MANAGEMENT
+// ============================================================
+let ingDB_sortKey  = 'name';
+let ingDB_sortAsc  = true;
+const DEFAULT_ING_DB = JSON.parse(JSON.stringify(ING_DB)); // snapshot for reset
+
+const CAT_COLORS = {
+  'Flour & Starch':   '#c8a96e',
+  'Sweeteners':       '#e85d04',
+  'Fats & Oils':      '#9c6644',
+  'Eggs':             '#f4a261',
+  'Dairy':            '#457b9d',
+  'Leavening':        '#2a9d8f',
+  'Spices':           '#e76f51',
+  'Flavouring':       '#8338ec',
+  'Chocolate':        '#6d4c41',
+  'Fruits':           '#e63946',
+  'Nuts & Dry Fruits':'#606c38',
+  'Other':            '#6c757d',
+};
+
+function getCatBadge(cat) {
+  if (!cat) return '';
+  const col = CAT_COLORS[cat] || '#888';
+  return `<span style="background:${col}22; color:${col}; border:1px solid ${col}55;
+    padding:2px 8px; border-radius:20px; font-size:0.7rem; font-weight:700;
+    white-space:nowrap;">${cat}</span>`;
+}
+
+function renderIngDBTable() {
+  const tbody   = document.getElementById('ingdb-tbody');
+  const countEl = document.getElementById('ingdb-count');
+  const search  = (document.getElementById('ingdb-search')?.value || '').toLowerCase();
+  const unitF   = document.getElementById('ingdb-filter-unit')?.value || '';
+
+  let entries = Object.entries(ING_DB);
+
+  // Filter
+  if (search) entries = entries.filter(([n, d]) =>
+    n.toLowerCase().includes(search) || (d.cat||'').toLowerCase().includes(search)
+  );
+  if (unitF) entries = entries.filter(([, d]) => d.unit === unitF);
+
+  // Sort
+  entries.sort(([an, ad], [bn, bd]) => {
+    let a, b;
+    if (ingDB_sortKey === 'name') { a = an.toLowerCase(); b = bn.toLowerCase(); }
+    else if (ingDB_sortKey === 'cost') { a = ad.cost; b = bd.cost; }
+    else if (ingDB_sortKey === 'unit') { a = ad.unit; b = bd.unit; }
+    else if (ingDB_sortKey === 'cat')  { a = (ad.cat||'').toLowerCase(); b = (bd.cat||'').toLowerCase(); }
+    if (a < b) return ingDB_sortAsc ? -1 : 1;
+    if (a > b) return ingDB_sortAsc ?  1 : -1;
+    return 0;
+  });
+
+  // Update sort indicators
+  ['name','unit','cost','cat'].forEach(k => {
+    const el = document.getElementById(`sort-${k}`);
+    if (el) el.textContent = k === ingDB_sortKey ? (ingDB_sortAsc ? '↑' : '↓') : '↕';
+  });
+
+  if (countEl) countEl.textContent = `${Object.keys(ING_DB).length} ingredients`;
+
+  if (entries.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No ingredients match your search.</td></tr>`;
+    return;
+  }
+
+  const isCustom = name => !DEFAULT_ING_DB.hasOwnProperty(name);
+
+  tbody.innerHTML = entries.map(([name, data]) => {
+    const custom = isCustom(name);
+    return `<tr style="${custom ? 'background:rgba(200,150,30,0.04);' : ''}">
+      <td>${getCatBadge(data.cat || '')}</td>
+      <td>
+        <input type="text" value="${escHtml(name)}" style="min-width:170px; font-weight:${custom?'700':'600'};"
+          onchange="renameIngDBEntry('${escQ(name)}', this.value)">
+        ${custom ? '<span style="color:var(--gold);font-size:0.7rem;margin-left:4px;">★ custom</span>' : ''}
+      </td>
+      <td>
+        <select style="width:75px;" onchange="updateIngDBField('${escQ(name)}','unit',this.value)">
+          ${['g','kg','ml','L','piece','tsp','tbsp','cup'].map(u =>
+            `<option ${u===data.unit?'selected':''}>${u}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <input type="number" value="${data.cost}" min="0" step="0.001" style="width:115px;"
+          oninput="updateIngDBField('${escQ(name)}','cost',parseFloat(this.value)||0)">
+      </td>
+      <td>
+        <input type="text" value="${escHtml(data.cat||'')}" list="cat-datalist"
+          style="width:135px; font-size:0.8rem;"
+          onchange="updateIngDBField('${escQ(name)}','cat',this.value)">
+      </td>
+      <td>
+        <button class="btn-icon" onclick="deleteIngDBEntry('${escQ(name)}')" title="Delete">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function sortIngDB(key) {
+  if (ingDB_sortKey === key) ingDB_sortAsc = !ingDB_sortAsc;
+  else { ingDB_sortKey = key; ingDB_sortAsc = true; }
+  renderIngDBTable();
+}
+
+function updateIngDBField(name, field, value) {
+  if (ING_DB[name]) ING_DB[name][field] = value;
+}
+
+function renameIngDBEntry(oldName, newName) {
+  newName = newName.trim();
+  if (!newName || newName === oldName) return;
+  if (ING_DB[newName]) {
+    showToast('⚠️ An ingredient with that name already exists.'); return;
+  }
+  ING_DB[newName] = { ...ING_DB[oldName] };
+  delete ING_DB[oldName];
+  renderIngDBTable();
+  populateIngDatalist();
+}
+
+function addIngDBEntry() {
+  const nameEl = document.getElementById('new-ing-name');
+  const errEl  = document.getElementById('ingdb-add-error');
+  const name   = nameEl.value.trim();
+  const unit   = document.getElementById('new-ing-unit').value;
+  const cost   = parseFloat(document.getElementById('new-ing-cost').value) || 0;
+  const cat    = document.getElementById('new-ing-cat').value.trim() || 'Other';
+
+  errEl.style.display = 'none';
+  if (!name) { errEl.textContent = '⚠️ Please enter an ingredient name.'; errEl.style.display='block'; return; }
+  if (ING_DB[name]) { errEl.textContent = `⚠️ "${name}" already exists in the database.`; errEl.style.display='block'; return; }
+  if (cost <= 0) { errEl.textContent = '⚠️ Please enter a valid cost greater than 0.'; errEl.style.display='block'; return; }
+
+  ING_DB[name] = { unit, cost, cat };
+  nameEl.value = '';
+  document.getElementById('new-ing-cost').value = '';
+  document.getElementById('new-ing-cat').value  = '';
+  saveIngDB(true);
+  renderIngDBTable();
+  populateIngDatalist();
+  showToast(`✅ "${name}" added to database!`);
+
+  // Scroll to new entry (last added)
+  setTimeout(() => {
+    document.getElementById('ingdb-search').value = name;
+    renderIngDBTable();
+  }, 400);
+}
+
+function deleteIngDBEntry(name) {
+  if (!confirm(`Delete "${name}" from the ingredient database? This cannot be undone.`)) return;
+  delete ING_DB[name];
+  saveIngDB(true);
+  renderIngDBTable();
+  populateIngDatalist();
+  showToast(`🗑️ "${name}" removed.`);
+}
+
+function saveIngDB(silent = false) {
+  localStorage.setItem('bakecost_ingdb', JSON.stringify(ING_DB));
+  populateIngDatalist();
+  const statusEl = document.getElementById('ingdb-saved-status');
+  if (statusEl) { statusEl.textContent = `✅ Saved at ${new Date().toLocaleTimeString()}`; }
+  if (!silent) showToast('\u2705 Ingredient prices saved!');
+}
+
+function resetIngDB() {
+  if (!confirm('Reset all ingredient prices to factory defaults? Your custom ingredients will be removed.')) return;
+  Object.keys(ING_DB).forEach(k => delete ING_DB[k]);
+  Object.assign(ING_DB, JSON.parse(JSON.stringify(DEFAULT_ING_DB)));
+  localStorage.removeItem('bakecost_ingdb');
+  renderIngDBTable();
+  populateIngDatalist();
+  showToast('🔄 Reset to defaults.');
+}
+
+function exportIngDBCSV() {
+  const rows = [['Ingredient', 'Unit', 'Cost Per Unit (INR)', 'Category']];
+  Object.entries(ING_DB).forEach(([name, data]) => {
+    rows.push([`"${name}"`, data.unit, data.cost, `"${data.cat||''}"`]);
+  });
+  const csv  = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'BakeCost_Ingredients.csv';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('\u2b07\ufe0f Exported as CSV!');
+}
+
+function importIngDBCSV(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines  = e.target.result.split('\n').filter(l => l.trim());
+    const header = lines[0].toLowerCase();
+    if (!header.includes('ingredient') && !header.includes('cost')) {
+      showToast('\u26a0\ufe0f CSV format not recognised. Use exported CSV as template.'); return;
+    }
+    let added = 0, skipped = 0;
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g,''));
+      if (cols.length < 3) continue;
+      const [name, unit, costStr, cat='Other'] = cols;
+      const cost = parseFloat(costStr);
+      if (!name || isNaN(cost)) { skipped++; continue; }
+      ING_DB[name] = { unit: unit || 'g', cost, cat: cat || 'Other' };
+      added++;
+    }
+    saveIngDB(true);
+    renderIngDBTable();
+    populateIngDatalist();
+    showToast(`\u2705 Imported ${added} ingredients${skipped?' ('+skipped+' skipped)':''}.`);
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+
+// ============================================================
+//  TAB NAVIGATION
+// ============================================================
+function showTab(name, el) {
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  if (el) el.classList.add('active');
+  if (name==='records')  loadRecords();
+  if (name==='settings') renderIngDBTable();
+}
+
+// ============================================================
+//  TOAST
+// ============================================================
+let toastTimer;
+function showToast(msg, dur=3200) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), dur);
+}
+
+// ============================================================
+//  BOOT
+// ============================================================
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

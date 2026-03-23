@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Full-screen theme — hides ActionBar so WebView fills the whole screen -->
+    <style name="Theme.BakeCostPro" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowBackground">@color/cream</item>
+        <item name="android:statusBarColor">@color/brown_dark</item>
+        <item name="android:navigationBarColor">@color/brown_dark</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>
