@@ -37,20 +37,24 @@ jobs:
           echo "✅ Copied index.html → android/app/src/main/assets/"
           ls -lh android/app/src/main/assets/
 
-      # ── 5. Download gradle-wrapper.jar ───────────────────────────
-      - name: 📦 Download Gradle wrapper jar
+      # ── 5. Download official gradlew + wrapper jar ──────────────
+      # (replaces the custom gradlew in the repo which has a JVM opts
+      #  quoting bug that causes: ClassNotFoundException: -Xmx64m)
+      - name: 📦 Download official Gradle wrapper files
         run: |
           mkdir -p android/gradle/wrapper
+          # Official gradlew shell script from Gradle releases
+          curl -sL \
+            "https://raw.githubusercontent.com/gradle/gradle/v8.4.0/gradlew" \
+            -o android/gradlew
+          # Official wrapper jar
           curl -sL \
             "https://raw.githubusercontent.com/gradle/gradle/v8.4.0/gradle/wrapper/gradle-wrapper.jar" \
             -o android/gradle/wrapper/gradle-wrapper.jar
-          echo "✅ gradle-wrapper.jar downloaded"
+          chmod +x android/gradlew
+          echo "✅ Official gradlew downloaded and ready"
 
-      # ── 6. Make gradlew executable ───────────────────────────────
-      - name: 🔧 Make gradlew executable
-        run: chmod +x android/gradlew
-
-      # ── 7. Cache Gradle ──────────────────────────────────────────
+      # ── 6. Cache Gradle ──────────────────────────────────────────
       - name: 💾 Cache Gradle packages
         uses: actions/cache@v4
         with:
@@ -60,14 +64,10 @@ jobs:
           key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: gradle-${{ runner.os }}-
 
-      # ── 8. Build DEBUG APK ───────────────────────────────────────
+      # ── 7. Build DEBUG APK ───────────────────────────────────────
       - name: 🔨 Build Debug APK
         working-directory: android
-        run: |
-          ./gradlew assembleDebug \
-            --no-daemon \
-            --stacktrace \
-            -Dorg.gradle.jvmargs="-Xmx2g"
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       # ── 9. Rename APK ────────────────────────────────────────────
       - name: 📝 Rename APK
@@ -117,8 +117,7 @@ jobs:
           STORE_PASSWORD:  ${{ secrets.STORE_PASSWORD }}
         run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > bakecost_release.keystore
-          ./gradlew assembleRelease \
-            --no-daemon \
+          ./gradlew assembleRelease --no-daemon \
             -Pandroid.injected.signing.store.file="$(pwd)/bakecost_release.keystore" \
             -Pandroid.injected.signing.store.password="$STORE_PASSWORD" \
             -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
