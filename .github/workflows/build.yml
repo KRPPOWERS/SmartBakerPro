@@ -1,0 +1,181 @@
+name: 🧁 Build BakeCost Pro APK
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  # ══════════════════════════════════════════════════════════════════
+  build-apk:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Java 17 ───────────────────────────────────────────────
+      - name: ☕ Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      # ── 3. Create .nojekyll ──────────────────────────────────────
+      - name: 📄 Create .nojekyll for GitHub Pages
+        run: touch .nojekyll
+
+      # ── 4. Copy web app into Android assets ──────────────────────
+      - name: 📋 Copy index.html into Android assets
+        run: |
+          cp index.html android/app/src/main/assets/index.html
+          echo "✅ Copied index.html → android/app/src/main/assets/"
+          ls -lh android/app/src/main/assets/
+
+      # ── 5. Download gradle-wrapper.jar ───────────────────────────
+      - name: 📦 Download Gradle wrapper jar
+        run: |
+          mkdir -p android/gradle/wrapper
+          curl -sL \
+            "https://raw.githubusercontent.com/gradle/gradle/v8.4.0/gradle/wrapper/gradle-wrapper.jar" \
+            -o android/gradle/wrapper/gradle-wrapper.jar
+          echo "✅ gradle-wrapper.jar downloaded"
+
+      # ── 6. Make gradlew executable ───────────────────────────────
+      - name: 🔧 Make gradlew executable
+        run: chmod +x android/gradlew
+
+      # ── 7. Cache Gradle ──────────────────────────────────────────
+      - name: 💾 Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      # ── 8. Build DEBUG APK ───────────────────────────────────────
+      - name: 🔨 Build Debug APK
+        working-directory: android
+        run: |
+          ./gradlew assembleDebug \
+            --no-daemon \
+            --stacktrace \
+            -Dorg.gradle.jvmargs="-Xmx2g"
+
+      # ── 9. Rename APK ────────────────────────────────────────────
+      - name: 📝 Rename APK
+        run: |
+          BUILD_DATE=$(date +'%Y%m%d-%H%M')
+          APK_SRC="android/app/build/outputs/apk/debug/app-debug.apk"
+          APK_DST="BakeCost_Pro_v1.0_${BUILD_DATE}_debug.apk"
+          mv "$APK_SRC" "$APK_DST"
+          echo "APK_PATH=$APK_DST" >> $GITHUB_ENV
+          echo "✅ APK: $APK_DST  ($(du -sh $APK_DST | cut -f1))"
+
+      # ── 10. Upload DEBUG APK ─────────────────────────────────────
+      - name: 📤 Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: BakeCost-Pro-Debug-APK
+          path: ${{ env.APK_PATH }}
+          retention-days: 30
+
+      # ── 11. Check if signing secrets are configured ──────────────
+      #   NOTE: 'secrets' context cannot be used in step 'if:' conditions
+      #   directly — we write a flag to GITHUB_OUTPUT instead and use that.
+      - name: 🔑 Check signing secrets
+        id: signing
+        env:
+          _KS: ${{ secrets.KEYSTORE_BASE64 }}
+          _KA: ${{ secrets.KEY_ALIAS }}
+        run: |
+          if [ -n "$_KS" ] && [ -n "$_KA" ]; then
+            echo "available=true"  >> $GITHUB_OUTPUT
+            echo "✅ Signing secrets found — release build will run"
+          else
+            echo "available=false" >> $GITHUB_OUTPUT
+            echo "ℹ️  No signing secrets — skipping release build"
+            echo "   (Add KEYSTORE_BASE64, KEY_ALIAS, KEY_PASSWORD, STORE_PASSWORD"
+            echo "    in repo Settings → Secrets → Actions to enable signed builds)"
+          fi
+
+      # ── 12. Build SIGNED RELEASE APK (only if secrets are set) ───
+      - name: 🔐 Build Signed Release APK
+        if: steps.signing.outputs.available == 'true' && github.event_name == 'push'
+        working-directory: android
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEY_ALIAS:       ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD:    ${{ secrets.KEY_PASSWORD }}
+          STORE_PASSWORD:  ${{ secrets.STORE_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > bakecost_release.keystore
+          ./gradlew assembleRelease \
+            --no-daemon \
+            -Pandroid.injected.signing.store.file="$(pwd)/bakecost_release.keystore" \
+            -Pandroid.injected.signing.store.password="$STORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
+          rm -f bakecost_release.keystore
+
+      # ── 13. Upload RELEASE APK ───────────────────────────────────
+      - name: 📤 Upload Release APK
+        if: steps.signing.outputs.available == 'true' && github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: BakeCost-Pro-Release-APK
+          path: android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 90
+
+      # ── 14. Summary ──────────────────────────────────────────────
+      - name: 📊 Build Summary
+        if: always()
+        run: |
+          echo "## 🧁 BakeCost Pro Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| | |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Build date | $(date +'%Y-%m-%d %H:%M UTC') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f "$APK_PATH" ]; then
+            echo "✅ **Debug APK** — $(du -sh $APK_PATH | cut -f1)" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⬆️ Download the APK from the **Artifacts** section above." >> $GITHUB_STEP_SUMMARY
+
+  # ══════════════════════════════════════════════════════════════════
+  setup-pages:
+    name: Setup GitHub Pages (.nojekyll)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create .nojekyll if missing
+        run: |
+          if [ ! -f .nojekyll ]; then
+            touch .nojekyll
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add .nojekyll
+            git commit -m "ci: add .nojekyll for GitHub Pages [skip ci]"
+            git push
+            echo "✅ .nojekyll committed"
+          else
+            echo "✅ .nojekyll already exists"
+          fi
